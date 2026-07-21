@@ -394,7 +394,12 @@ def _render_speaker_cards(segments, record) -> None:
             c5.selectbox(
                 "Nativity", SPEAKER_NATIVITIES, key=f"spk_{label}_nativity"
             )
-            c6.text_input("Speaker Languages", value=languages, disabled=True)
+            c6.text_input(
+                "Speaker Languages",
+                value=languages,
+                disabled=True,
+                key=f"spk_{label}_langs_display",
+            )
 
 
 # --- Config assembly -------------------------------------------------------
