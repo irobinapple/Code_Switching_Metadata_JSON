@@ -7,13 +7,20 @@ import io
 import pandas as pd
 from openpyxl import load_workbook
 
-from src.constants import RAWMETADATA_COLUMNS
+from src.constants import METADATA_COLUMNS, RAWMETADATA_COLUMNS
 from src.exporters import (
     RAWMETADATA_SHEET_NAME,
+    metadata_to_csv_bytes,
     rawmetadata_to_csv_bytes,
     rawmetadata_to_xlsx_bytes,
 )
-from src.transformers import build_rawmetadata, segment_id
+from src.transformers import (
+    build_filename_stem,
+    build_metadata,
+    build_rawmetadata,
+    conversation_duration_sec,
+    segment_id,
+)
 
 
 class TestSegmentId:
@@ -136,3 +143,77 @@ class TestExports:
             for r in range(2, worksheet.max_row + 1)
         ]
         assert any("Tôi rất bức bội." in (v or "") for v in values)
+
+
+class TestMetadata:
+    def test_exact_column_order(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        frame = build_metadata(vi_en_segments, vi_config, vi_speaker_map)
+        assert list(frame.columns) == METADATA_COLUMNS
+        assert len(frame.columns) == 21
+
+    def test_one_row_per_unique_speaker(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        frame = build_metadata(vi_en_segments, vi_config, vi_speaker_map)
+        assert len(frame) == 2
+        assert frame["Speaker_ID"].tolist() == ["S1", "S2"]
+        assert frame["SNo"].tolist() == [1, 2]
+
+    def test_per_speaker_turn_count_not_conversation_total(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        # SPK001 speaks turns 1 & 3, SPK002 turns 2 & 4 -> 2 each, not 4.
+        frame = build_metadata(vi_en_segments, vi_config, vi_speaker_map)
+        counts = dict(
+            zip(frame["Speaker_ID"], frame["Number_of_Turns"])
+        )
+        assert counts == {"S1": 2, "S2": 2}
+
+    def test_duration_is_conversation_level(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        frame = build_metadata(vi_en_segments, vi_config, vi_speaker_map)
+        # max end (24.8) - min start (4.04) = 20.76, same on every row.
+        assert frame["Duration_Sec"].tolist() == [20.76, 20.76]
+
+    def test_duration_numeric(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        frame = build_metadata(vi_en_segments, vi_config, vi_speaker_map)
+        assert pd.api.types.is_numeric_dtype(frame["Duration_Sec"])
+
+    def test_filename_underscore_joined(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        frame = build_metadata(vi_en_segments, vi_config, vi_speaker_map)
+        assert (
+            frame["FileName"] == "vi-VN_English_AIR_48kHz_Conv0347"
+        ).all()
+
+    def test_no_qc_notes_column(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        frame = build_metadata(vi_en_segments, vi_config, vi_speaker_map)
+        assert "QC_Notes" not in frame.columns
+
+    def test_metadata_csv_bom_and_unicode(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        frame = build_metadata(vi_en_segments, vi_config, vi_speaker_map)
+        data = metadata_to_csv_bytes(frame)
+        assert data.startswith(b"\xef\xbb\xbf")
+
+
+class TestHelpers:
+    def test_filename_stem(self, vi_config):
+        assert build_filename_stem(vi_config) == (
+            "vi-VN_English_AIR_48kHz_Conv0347"
+        )
+
+    def test_duration_helper(self, vi_en_segments):
+        assert conversation_duration_sec(vi_en_segments) == 20.76
+
+    def test_duration_empty(self):
+        assert conversation_duration_sec([]) == 0.0

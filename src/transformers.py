@@ -11,6 +11,7 @@ import pandas as pd
 from .constants import (
     DEFAULT_LOUDNESS_LEVEL,
     DEFAULT_PRIMARY_TYPE,
+    METADATA_COLUMNS,
     METADATA_TYPE_TRANSLITERATION,
     RAWMETADATA_COLUMNS,
 )
@@ -85,4 +86,81 @@ def build_rawmetadata(
     for col in ("Start_Time_Sec", "End_Time_Sec"):
         frame[col] = frame[col].astype(str)
     _ = is_translit  # Transliteration_Text stays blank; editable in the UI.
+    return frame
+
+
+def build_filename_stem(config: ConversationConfig) -> str:
+    """`<LangPair>_<Domain>_<Sampling_Rate>_<ConvID>` — real delivery form."""
+    return (
+        f"{config.lang_pair}_{config.domain}_"
+        f"{config.sampling_rate}_{config.conv_id}"
+    )
+
+
+def conversation_duration_sec(segments: list[TranscriptSegment]) -> float:
+    """max(parsed end) - min(parsed start) across the whole conversation."""
+    if not segments:
+        return 0.0
+    latest = max(seg.end_sec for seg in segments)
+    earliest = min(seg.start_sec for seg in segments)
+    return round(latest - earliest, 2)
+
+
+def build_metadata(
+    segments: list[TranscriptSegment],
+    config: ConversationConfig,
+    speaker_map: dict[str, SpeakerMapping],
+) -> pd.DataFrame:
+    """Build the metadata DataFrame — one row per unique speaker, 21 columns.
+
+    Duration is conversation-level (identical on every speaker row); turn count
+    is per-speaker only.
+    """
+    file_stem = build_filename_stem(config)
+    duration = conversation_duration_sec(segments)
+
+    # Per-speaker turn counts keyed by output Speaker_ID.
+    turn_counts: dict[str, int] = {}
+    speaker_order: list[str] = []
+    for seg in segments:
+        mapping = speaker_map[seg.speaker_label]
+        speaker_id = mapping.speaker_id
+        if speaker_id not in turn_counts:
+            turn_counts[speaker_id] = 0
+            speaker_order.append(seg.speaker_label)
+        turn_counts[speaker_id] += 1
+
+    rows: list[dict[str, object]] = []
+    for sno, label in enumerate(speaker_order, start=1):
+        mapping = speaker_map[label]
+        rows.append(
+            {
+                "SNo": sno,
+                "FileName": file_stem,
+                "ConvID": config.conv_id,
+                "LangPair": config.lang_pair,
+                "Speaker_ID": mapping.speaker_id,
+                "Speaker_Role": mapping.role,
+                "Speaker_Role_Source": mapping.role_source,
+                "Speaker_Gender": mapping.gender,
+                "Speaker_Gender_Source": mapping.gender_source,
+                "Speaker_Age_Bucket": mapping.age_bucket,
+                "Speaker_Nativity": mapping.nativity,
+                "Speaker_Nativity_Source": mapping.nativity_source,
+                "Domain": config.domain,
+                "Duration_Sec": duration,
+                "Number_of_Turns": turn_counts[mapping.speaker_id],
+                "Sampling_Rate": config.sampling_rate,
+                "CS_Ratio_Primary": config.cs_ratio_primary,
+                "CS_Ratio_Secondary": config.cs_ratio_secondary,
+                "Recording_Date": config.recording_date,
+                "Conversation_Script_Path": config.conversation_script_path,
+                "Audio_File_Path": config.audio_file_path,
+            }
+        )
+
+    frame = pd.DataFrame(rows, columns=METADATA_COLUMNS)
+    # Force numeric duration so no exporter coerces it to an Excel time.
+    frame["Duration_Sec"] = pd.to_numeric(frame["Duration_Sec"])
+    frame["Number_of_Turns"] = pd.to_numeric(frame["Number_of_Turns"])
     return frame

@@ -7,6 +7,8 @@ errors (which disable downloads) from non-blocking warnings.
 
 from __future__ import annotations
 
+import json
+import math
 import re
 from dataclasses import dataclass, field
 
@@ -14,11 +16,13 @@ import pandas as pd
 
 from .constants import (
     DOMAIN_CODES,
+    METADATA_COLUMNS,
     NO_SPEAKER_ROLE,
     RAWMETADATA_COLUMNS,
     SAMPLING_RATES,
 )
 from .models import ConversationConfig, SpeakerMapping, TranscriptSegment
+from .transformers import conversation_duration_sec
 
 _SPK_STYLE_RE = re.compile(r"^SPK\d+$", re.IGNORECASE)
 
@@ -226,3 +230,148 @@ def _warn_no_speaker_content(
             result.warn(
                 f"Segment {i} is marked No-Speaker but has speech content."
             )
+
+
+# --- Full quality-gate suite (rawmetadata + metadata + JSON) ---------------
+
+
+def run_full_validation(
+    raw_frame: pd.DataFrame,
+    meta_frame: pd.DataFrame,
+    json_obj: dict,
+    json_bytes: bytes,
+    config: ConversationConfig,
+    speaker_map: dict[str, SpeakerMapping],
+    segments: list[TranscriptSegment],
+) -> ValidationResult:
+    """Run the entire quality-gate suite and mandatory automated checks."""
+    result = validate_rawmetadata(raw_frame, config, speaker_map, segments)
+    _check_turn_no_sequential(result, raw_frame)
+    _check_numeric_times(result, segments)
+    validate_metadata(result, meta_frame, raw_frame, segments)
+    validate_json(result, json_obj, json_bytes, raw_frame, segments)
+    return result
+
+
+def _check_turn_no_sequential(
+    result: ValidationResult, raw_frame: pd.DataFrame
+) -> None:
+    turns = raw_frame["Turn_No"].tolist()
+    if turns != list(range(1, len(turns) + 1)):
+        result.error("Turn_No is not sequential starting at 1.")
+
+
+def _check_numeric_times(
+    result: ValidationResult, segments: list[TranscriptSegment]
+) -> None:
+    for i, seg in enumerate(segments, start=1):
+        if not (
+            math.isfinite(seg.start_sec) and math.isfinite(seg.end_sec)
+        ):
+            result.error(f"Segment {i} has an invalid numeric start/end time.")
+
+
+def validate_metadata(
+    result: ValidationResult,
+    meta_frame: pd.DataFrame,
+    raw_frame: pd.DataFrame,
+    segments: list[TranscriptSegment],
+) -> None:
+    """Metadata column order, per-speaker turn counts, conversation duration."""
+    if list(meta_frame.columns) != METADATA_COLUMNS:
+        result.error(
+            "metadata columns are missing or out of order. Expected the "
+            f"{len(METADATA_COLUMNS)} defined columns in the exact order."
+        )
+        return
+
+    # Per-speaker turn counts must match rawmetadata group counts.
+    raw_counts = raw_frame.groupby("Speaker_ID").size().to_dict()
+    for _, row in meta_frame.iterrows():
+        speaker = row["Speaker_ID"]
+        expected = raw_counts.get(speaker, 0)
+        if int(row["Number_of_Turns"]) != int(expected):
+            result.error(
+                f"metadata Number_of_Turns for {speaker!r} "
+                f"({row['Number_of_Turns']}) does not match the rawmetadata "
+                f"count ({expected})."
+            )
+
+    # Duration must equal max end - min start for the conversation.
+    expected_duration = conversation_duration_sec(segments)
+    for value in meta_frame["Duration_Sec"].tolist():
+        if round(float(value), 2) != expected_duration:
+            result.error(
+                f"metadata Duration_Sec ({value}) does not match the "
+                f"conversation duration ({expected_duration})."
+            )
+            break
+
+    if "QC_Notes" in meta_frame.columns or "QCNotes" in meta_frame.columns:
+        result.error("QC_Notes must not appear in metadata.")
+
+
+def validate_json(
+    result: ValidationResult,
+    json_obj: dict,
+    json_bytes: bytes,
+    raw_frame: pd.DataFrame,
+    segments: list[TranscriptSegment],
+) -> None:
+    """JSON parseability, structure, ordering, and schema-literal checks."""
+    # Re-parse to confirm serializability/round-trip.
+    try:
+        text = json_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        result.error("Generated JSON is not valid UTF-8.")
+        return
+    try:
+        reloaded = json.loads(text)
+    except json.JSONDecodeError as exc:
+        result.error(f"Generated JSON cannot be re-parsed: {exc}")
+        return
+
+    # Transliteration key casing.
+    if '"transliteration"' in text:
+        result.error(
+            "JSON uses lowercase 'transliteration'; it must be "
+            "'Transliteration' (capital T)."
+        )
+
+    # QC_Notes must never leak into JSON.
+    if "QC_Notes" in text or "QCNotes" in text:
+        result.error("QC_Notes must not appear in JSON.")
+
+    value = reloaded.get("value", {})
+    json_segments = value.get("segments", [])
+    json_speakers = value.get("speakers", [])
+
+    # Segment count equals rawmetadata row count.
+    if len(json_segments) != len(raw_frame):
+        result.error(
+            f"JSON segment count ({len(json_segments)}) does not equal the "
+            f"rawmetadata row count ({len(raw_frame)})."
+        )
+
+    # Speaker count equals unique speaker count for the conversation.
+    unique_speakers = raw_frame["Speaker_ID"].nunique()
+    if len(json_speakers) != unique_speakers:
+        result.error(
+            f"JSON speaker count ({len(json_speakers)}) does not equal the "
+            f"unique speaker count ({unique_speakers})."
+        )
+
+    # Segments ascending by start.
+    starts = [seg.get("start") for seg in json_segments]
+    if starts != sorted(starts):
+        result.error("JSON segments are not sorted ascending by start.")
+
+    # domainList must be an array with exactly one item.
+    domain_list = value.get("domainInfo", {}).get("domainList")
+    if not isinstance(domain_list, list):
+        result.error("domainInfo.domainList must be a JSON array.")
+    elif len(domain_list) != 1:
+        result.error(
+            f"domainInfo.domainList must contain exactly one item, "
+            f"found {len(domain_list)}."
+        )

@@ -8,6 +8,7 @@ cannot corrupt a pasted timestamp into a time serial.
 from __future__ import annotations
 
 import io
+import json
 
 import pandas as pd
 from openpyxl import Workbook
@@ -22,6 +23,45 @@ _EXCEL_TEXT_FORMAT = "@"
 def rawmetadata_to_csv_bytes(frame: pd.DataFrame) -> bytes:
     """CSV bytes, UTF-8 with BOM for Excel compatibility."""
     return frame.to_csv(index=False).encode("utf-8-sig")
+
+
+def metadata_to_csv_bytes(frame: pd.DataFrame) -> bytes:
+    """metadata.csv bytes, UTF-8 with BOM."""
+    return frame.to_csv(index=False).encode("utf-8-sig")
+
+
+def validation_report_json_bytes(errors: list[str], warnings: list[str]) -> bytes:
+    """Serialize the validation report as JSON."""
+    report = {
+        "blocking_error_count": len(errors),
+        "warning_count": len(warnings),
+        "errors": errors,
+        "warnings": warnings,
+    }
+    return json.dumps(report, ensure_ascii=False, indent=2).encode("utf-8")
+
+
+def validation_report_txt_bytes(errors: list[str], warnings: list[str]) -> bytes:
+    """Serialize the validation report as human-readable text."""
+    lines = [
+        "Validation Report",
+        "=================",
+        f"Blocking errors: {len(errors)}",
+        f"Warnings: {len(warnings)}",
+        "",
+        "Errors:",
+    ]
+    if errors:
+        lines.extend(f"  - {e}" for e in errors)
+    else:
+        lines.append("  (none)")
+    lines.append("")
+    lines.append("Warnings:")
+    if warnings:
+        lines.extend(f"  - {w}" for w in warnings)
+    else:
+        lines.append("  (none)")
+    return ("\n".join(lines) + "\n").encode("utf-8")
 
 
 def rawmetadata_to_xlsx_bytes(frame: pd.DataFrame) -> bytes:

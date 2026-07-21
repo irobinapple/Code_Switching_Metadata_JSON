@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import dataclasses
 
+from src.json_builder import build_conversation_json, json_to_bytes
 from src.models import SpeakerMapping
-from src.transformers import build_rawmetadata
-from src.validators import validate_rawmetadata
+from src.transformers import build_metadata, build_rawmetadata
+from src.validators import run_full_validation, validate_rawmetadata
 
 
 def _validate(segments, config, speaker_map):
@@ -102,3 +103,77 @@ class TestWarnings:
         )
         _, result = _validate(vi_en_segments, vi_config, m)
         assert any("No-Speaker" in w for w in result.warnings)
+
+
+def _full(segments, config, speaker_map):
+    raw = build_rawmetadata(segments, config, speaker_map)
+    meta = build_metadata(segments, config, speaker_map)
+    obj = build_conversation_json(segments, config, speaker_map)
+    data = json_to_bytes(obj)
+    return run_full_validation(
+        raw, meta, obj, data, config, speaker_map, segments
+    )
+
+
+class TestFullValidationSuite:
+    def test_clean_inputs_pass(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        result = _full(vi_en_segments, vi_config, vi_speaker_map)
+        assert not result.has_blocking_errors, result.errors
+
+    def test_detects_lowercase_transliteration(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        from src.validators import ValidationResult, validate_json
+
+        raw = build_rawmetadata(vi_en_segments, vi_config, vi_speaker_map)
+        obj = build_conversation_json(vi_en_segments, vi_config, vi_speaker_map)
+        # Corrupt the key casing and re-serialize.
+        bad = json_to_bytes(obj).replace(
+            b'"Transliteration"', b'"transliteration"'
+        )
+        result = ValidationResult()
+        validate_json(result, obj, bad, raw, vi_en_segments)
+        assert any("lowercase" in e for e in result.errors)
+
+    def test_detects_domainlist_not_array(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        from src.validators import ValidationResult, validate_json
+
+        raw = build_rawmetadata(vi_en_segments, vi_config, vi_speaker_map)
+        obj = build_conversation_json(vi_en_segments, vi_config, vi_speaker_map)
+        # Break the array-wrapping into a bare object.
+        obj["value"]["domainInfo"]["domainList"] = {
+            "domain": "Call-center",
+            "topicList": ["AIR"],
+        }
+        data = json_to_bytes(obj)
+        result = ValidationResult()
+        validate_json(result, obj, data, raw, vi_en_segments)
+        assert any("array" in e for e in result.errors)
+
+    def test_detects_turn_count_mismatch(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        from src.validators import ValidationResult, validate_metadata
+
+        raw = build_rawmetadata(vi_en_segments, vi_config, vi_speaker_map)
+        meta = build_metadata(vi_en_segments, vi_config, vi_speaker_map)
+        meta.loc[0, "Number_of_Turns"] = 99
+        result = ValidationResult()
+        validate_metadata(result, meta, raw, vi_en_segments)
+        assert any("Number_of_Turns" in e for e in result.errors)
+
+    def test_detects_duration_mismatch(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        from src.validators import ValidationResult, validate_metadata
+
+        raw = build_rawmetadata(vi_en_segments, vi_config, vi_speaker_map)
+        meta = build_metadata(vi_en_segments, vi_config, vi_speaker_map)
+        meta.loc[0, "Duration_Sec"] = 999.0
+        result = ValidationResult()
+        validate_metadata(result, meta, raw, vi_en_segments)
+        assert any("Duration_Sec" in e for e in result.errors)

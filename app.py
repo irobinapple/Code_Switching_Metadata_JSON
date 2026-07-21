@@ -22,8 +22,19 @@ from src.constants import (
     SPEAKER_NATIVITIES,
     SPEAKER_ROLES,
 )
-from src.exporters import rawmetadata_to_csv_bytes, rawmetadata_to_xlsx_bytes
+from src.exporters import (
+    metadata_to_csv_bytes,
+    rawmetadata_to_csv_bytes,
+    rawmetadata_to_xlsx_bytes,
+    validation_report_json_bytes,
+    validation_report_txt_bytes,
+)
 from src.filename_parser import parse_filename
+from src.json_builder import (
+    build_conversation_json,
+    json_filename,
+    json_to_bytes,
+)
 from src.models import (
     ConversationConfig,
     SpeakerMapping,
@@ -40,8 +51,12 @@ from src.transcript_parser import (
     parse_transcript_text,
     read_csv_bytes,
 )
-from src.transformers import build_rawmetadata
-from src.validators import validate_rawmetadata
+from src.transformers import (
+    build_metadata,
+    build_rawmetadata,
+    conversation_duration_sec,
+)
+from src.validators import run_full_validation, validate_rawmetadata
 
 STAGES = [
     "Upload",
@@ -422,12 +437,82 @@ def _stage_preview(records) -> None:
 
 
 def _stage_generate(records) -> None:
+    segments = st.session_state.get("segments")
+    if not segments:
+        st.info("Upload a transcript first.")
+        return
+
     st.subheader("4. Generate Metadata & JSON")
-    st.info(
-        "Metadata and JSON generation is implemented in Milestone 3. The raw "
-        "metadata pipeline (stages 1–3) is complete and validated."
+    config = _assemble_config(records)
+    speaker_map = _assemble_speaker_map(segments)
+
+    raw_frame = build_rawmetadata(segments, config, speaker_map)
+    meta_frame = build_metadata(segments, config, speaker_map)
+    json_obj = build_conversation_json(segments, config, speaker_map)
+    json_bytes = json_to_bytes(json_obj)
+
+    result = run_full_validation(
+        raw_frame, meta_frame, json_obj, json_bytes, config, speaker_map,
+        segments,
     )
+
+    _render_summary_cards(segments, meta_frame, result)
+    st.divider()
+    _render_validation_panel(result)
+    st.divider()
+
+    blocked = result.has_blocking_errors
+    st.markdown("**Validated outputs**")
+    if blocked:
+        st.caption("Downloads are disabled until all blocking errors are fixed.")
+
+    d1, d2 = st.columns(2)
+    d1.download_button(
+        "Download metadata.csv",
+        data=metadata_to_csv_bytes(meta_frame),
+        file_name="metadata.csv",
+        mime="text/csv",
+        disabled=blocked,
+    )
+    d2.download_button(
+        f"Download {json_filename(config)}",
+        data=json_bytes,
+        file_name=json_filename(config),
+        mime="application/json",
+        disabled=blocked,
+    )
+
+    r1, r2 = st.columns(2)
+    r1.download_button(
+        "Download validation_report.json",
+        data=validation_report_json_bytes(result.errors, result.warnings),
+        file_name="validation_report.json",
+        mime="application/json",
+    )
+    r2.download_button(
+        "Download validation_report.txt",
+        data=validation_report_txt_bytes(result.errors, result.warnings),
+        file_name="validation_report.txt",
+        mime="text/plain",
+    )
+
+    st.divider()
     st.button("← Back to preview", on_click=_goto, args=(2,))
+
+
+def _render_summary_cards(segments, meta_frame, result) -> None:
+    earliest = min(segments, key=lambda s: s.start_sec)
+    latest = max(segments, key=lambda s: s.end_sec)
+    duration = conversation_duration_sec(segments)
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Segments", len(segments))
+    c2.metric("Speakers", len(meta_frame))
+    c3.metric("Start time", earliest.start_text)
+    c4.metric("End time", latest.end_text)
+    c5, c6, c7 = st.columns(3)
+    c5.metric("Duration (sec)", f"{duration:g}")
+    c6.metric("Warnings", len(result.warnings))
+    c7.metric("Blocking errors", len(result.errors))
 
 
 # --- Main ------------------------------------------------------------------
