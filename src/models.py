@@ -25,8 +25,13 @@ class LanguageRecord:
 
     @property
     def lang_pair(self) -> str:
-        """LangPair as `<language_code>_<secondary_language_code>`."""
-        return f"{self.language_code}_{self.secondary_language_code}"
+        """LangPair token as it appears in real filenames, e.g. `vi-VN_English`.
+
+        Every configured language code-switches with English (the secondary is
+        always `en_<REGION>`), so the pair partner is the literal `English`,
+        matching every delivered filename (`vi-VN_English_AIR_48kHz_Conv0347`).
+        """
+        return f"{self.language_code}_English"
 
 
 def load_language_records(path: Path | None = None) -> list[LanguageRecord]:
@@ -87,3 +92,55 @@ class TranscriptSegment:
     start_sec: float
     end_sec: float
     content_text: str
+
+
+@dataclass
+class ConversationConfig:
+    """Conversation-level values from the setup form (one per ConvID)."""
+
+    conv_id: str
+    lang_pair: str
+    primary_language_code: str
+    secondary_language_code: str
+    metadata_type: str
+    domain: str
+    sampling_rate: str
+    recording_date: str
+    conversation_script_path: str
+    audio_file_path: str
+    master_convention_name: str
+    custom_addendum: str
+    annotator_id: str
+    cs_ratio_primary: float
+    cs_ratio_secondary: float
+
+
+@dataclass
+class SpeakerMapping:
+    """Output values for one source speaker label from the mapping form."""
+
+    transcript_label: str
+    speaker_id: str
+    role: str
+    gender: str
+    age_bucket: str
+    nativity: str
+
+    @property
+    def role_source(self) -> str:
+        """`Annotator` only when the role is `No-Speaker`, else empty."""
+        from .constants import ANNOTATOR_SOURCE, NO_SPEAKER_ROLE
+
+        return ANNOTATOR_SOURCE if self.role == NO_SPEAKER_ROLE else ""
+
+    @property
+    def gender_source(self) -> str:
+        from .constants import ANNOTATOR_SOURCE
+
+        return ANNOTATOR_SOURCE
+
+    @property
+    def nativity_source(self) -> str:
+        from .constants import ANNOTATOR_SOURCE
+
+        return ANNOTATOR_SOURCE
