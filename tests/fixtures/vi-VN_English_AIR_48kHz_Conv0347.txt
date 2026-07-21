@@ -1,0 +1,12 @@
+00:00:04,040 --> 00:00:07,400 [SPK001]
+Xin chào, cảm ơn quý khách đã gọi đến bộ phận hỗ trợ hàng không.
+
+00:00:08,280 --> 00:00:14,240 [SPK002]
+Tôi rất bức bội. My flight to Paris was just cancelled and no one told me anything.
+
+00:00:15,000 --> 00:00:19,500 [SPK001]
+Tôi rất xin lỗi về sự bất tiện này. Let me check your booking right away.
+I can see your reservation here.
+
+00:00:20,100 --> 00:00:24,800 [SPK002]
+Cảm ơn. I really need to get there by tomorrow morning.
