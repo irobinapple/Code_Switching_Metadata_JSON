@@ -90,15 +90,61 @@ def _reset_project() -> None:
 # --- Header & stepper ------------------------------------------------------
 
 
+_CSS = """
+<style>
+:root { --accent: #1f6feb; }
+.stApp { background-color: #ffffff; }
+.block-container { padding-top: 2rem; max-width: 1200px; }
+h1 { font-size: 1.6rem !important; font-weight: 700; }
+.stButton > button[kind="primary"] {
+    background-color: var(--accent);
+    border-color: var(--accent);
+}
+.stButton > button { border-radius: 6px; }
+div[data-testid="stMetric"] {
+    background: #f6f8fa;
+    border: 1px solid #e4e8ee;
+    border-radius: 8px;
+    padding: 0.6rem 0.9rem;
+}
+section[data-testid="stSidebar"] { background: #f6f8fa; }
+</style>
+"""
+
+
 def _render_header() -> None:
     st.set_page_config(
-        page_title="Transcript Metadata & JSON Generator", layout="wide"
+        page_title="Transcript Metadata & JSON Generator",
+        layout="wide",
+        page_icon="🗂️",
     )
+    st.markdown(_CSS, unsafe_allow_html=True)
     st.title("Transcript Metadata & JSON Generator")
     st.caption(
         "Convert a timestamped, multilingual code-switching transcript into "
         "rawmetadata, metadata, and per-conversation JSON."
     )
+
+
+def _render_sidebar_summary(records) -> None:
+    """Sticky live summary of derived, read-only values."""
+    segments = st.session_state.get("segments")
+    if not segments:
+        st.caption("Upload a transcript to see a live summary.")
+        return
+    record = _selected_record(records)
+    st.markdown("#### Summary")
+    rows = {
+        "ConvID": st.session_state.get("cfg_conv_id", "—") or "—",
+        "LangPair": record.lang_pair,
+        "Primary": record.primary_language_code,
+        "Secondary": record.secondary_language_code,
+        "Metadata type": record.metadata_type,
+        "Turns": len(segments),
+        "Speakers": len(detect_speakers(segments)),
+    }
+    for key, value in rows.items():
+        st.markdown(f"**{key}:** `{value}`")
 
 
 def _render_stepper() -> None:
@@ -260,9 +306,18 @@ def _stage_configure(records) -> None:
             value=st.session_state.get("uploaded_name", ""),
             disabled=True,
         )
-        st.text_input("ConvID", key="cfg_conv_id")
+        st.text_input(
+            "ConvID",
+            key="cfg_conv_id",
+            help="Parsed from the filename (e.g. Conv0347). Edit if wrong.",
+        )
         display_names = [r.display_name for r in records]
-        st.selectbox("Language", display_names, key="cfg_language")
+        st.selectbox(
+            "Language",
+            display_names,
+            key="cfg_language",
+            help="Drives LangPair and all derived language codes.",
+        )
         st.selectbox("Domain", DOMAIN_CODES, key="cfg_domain")
         st.selectbox("Sampling Rate", SAMPLING_RATES, key="cfg_sampling")
         st.date_input("Recording Date", key="cfg_recording_date")
@@ -281,9 +336,18 @@ def _stage_configure(records) -> None:
             disabled=True,
         )
         st.text_input("Metadata Type", value=record.metadata_type, disabled=True)
-        st.text_input("Annotator ID", key="cfg_annotator")
+        st.text_input(
+            "Annotator ID",
+            key="cfg_annotator",
+            help="Required. Blocks generation while empty.",
+        )
         c1, c2 = st.columns(2)
-        c1.number_input("CS Ratio Primary", key="cfg_cs_primary", step=1)
+        c1.number_input(
+            "CS Ratio Primary",
+            key="cfg_cs_primary",
+            step=1,
+            help="Primary vs secondary should total 100.",
+        )
         c2.number_input("CS Ratio Secondary", key="cfg_cs_secondary", step=1)
 
     with st.expander("Paths & convention"):
@@ -526,6 +590,8 @@ def main() -> None:
     with st.sidebar:
         st.markdown("### Project")
         st.caption(f"{len(records)} languages loaded from config.")
+        _render_sidebar_summary(records)
+        st.divider()
         st.button("Reset project", on_click=_reset_project)
 
     _render_stepper()
