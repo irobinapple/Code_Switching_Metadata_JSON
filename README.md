@@ -60,21 +60,38 @@ pytest
 ## Sharing with non-technical associates
 
 The tool runs entirely on the associate's own machine — no server, no account,
-and uploaded transcripts never leave their computer.
+and uploaded transcripts never leave their computer. The first launch installs
+a self-contained runtime (`uv`, which also fetches the correct Python
+automatically) plus dependencies — a couple of minutes, one time only. The
+browser then opens at http://localhost:8501; later launches start almost
+instantly. Plain-language steps for associates are in **`HOW_TO_RUN.txt`**.
 
-1. **Give them the folder.** On GitHub click **Code → Download ZIP**, or copy
-   the whole project folder to a USB/drive. Keep every file together.
-2. **They double-click the launcher:**
-   - Windows: `Ace-CSMJ.bat`
-   - macOS/Linux: `Ace-CSMJ.command` (first time: right-click → Open)
-3. The first launch installs a self-contained runtime (`uv`, which also fetches
-   the correct Python automatically) and the dependencies — a couple of
-   minutes, one time only. The browser then opens at http://localhost:8501.
-   Later launches start almost instantly.
+There are two ways to distribute, depending on whether you want auto-updates.
 
-Plain-language instructions for associates are in **`HOW_TO_RUN.txt`**. To stop
-the app they close the launcher window; to start again they double-click the
-launcher again. To push out an update, re-share the folder.
+### Recommended: auto-updating copy (best for frequent changes)
+
+Send associates the single file **`Get-Ace-CSMJ.bat`**. They double-click it; it
+downloads the whole tool into a `Code_Switching_Metadata_JSON` folder. From then
+on, **`Ace-CSMJ.bat` pulls your latest changes automatically on every launch**
+(and only re-installs dependencies when something actually changed, so normal
+launches stay fast and work offline). Requires Git for Windows (the file links
+them to it if missing); on a private repo the first download shows a one-time
+GitHub sign-in.
+
+- `Get-Ace-CSMJ.bat` — one-time downloader (the only file you need to send)
+- `Ace-CSMJ.bat` — start the app (auto-updates first)
+- `Update.bat` — pull the latest without starting the app
+- `CreateDesktopShortcut.bat` — put an "Ace - CSMJ" icon on the Desktop
+
+### Simple: static copy (no auto-update)
+
+Click **Code → Download ZIP** on GitHub (or copy the folder to a USB/drive),
+keep all files together, and have them double-click `Ace-CSMJ.bat`
+(macOS/Linux: `Ace-CSMJ.command`, first time right-click → Open). To push an
+update, re-share the folder.
+
+To stop the app, close the launcher window; to start again, double-click the
+launcher (or the desktop shortcut).
 
 ## Supported filename examples
 

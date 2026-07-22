@@ -21,6 +21,12 @@ WINDOWS  (most people)
   TO START AGAIN LATER:  double-click Ace-CSMJ.bat again
                          (it will be quick from now on).
 
+  WANT A DESKTOP ICON?  double-click  CreateDesktopShortcut.bat  once.
+     You then get an "Ace - CSMJ" icon on your Desktop to start it.
+
+  UPDATES:  the tool updates itself automatically each time you open it
+     (if it was set up with Get-Ace-CSMJ.bat). Nothing for you to do.
+
   If Windows shows a blue "Windows protected your PC" box:
      click "More info"  ->  "Run anyway".
      (This just means the file came from the internet.)
