@@ -46,7 +46,13 @@ class TestStructure:
         obj = _build(vi_en_segments, vi_config, vi_speaker_map)
         info = obj["value"]["languageInfo"]
         assert info["spokenLanguages"] == ["vi_VN", "en_VN"]
-        assert info["speakerDominantVarieties"] == ["vi_VN"]
+        assert info["speakerDominantVarieties"] == [
+            {
+                "languageLocale": "vi_VN",
+                "languageVariety": [],
+                "otherLanguageInfluence": [],
+            }
+        ]
 
 
 class TestSegments:
@@ -73,14 +79,14 @@ class TestSegments:
         starts = [s["start"] for s in obj["value"]["segments"]]
         assert starts == sorted(starts)
 
-    def test_transliteration_capital_t_and_null(
+    def test_transliteration_lowercase_and_null(
         self, vi_en_segments, vi_config, vi_speaker_map
     ):
         obj = _build(vi_en_segments, vi_config, vi_speaker_map)
         seg = obj["value"]["segments"][0]
-        assert "Transliteration" in seg["transcriptionData"]
-        assert "transliteration" not in seg["transcriptionData"]
-        assert seg["transcriptionData"]["Transliteration"] is None
+        assert "transliteration" in seg["transcriptionData"]
+        assert "Transliteration" not in seg["transcriptionData"]
+        assert seg["transcriptionData"]["transliteration"] is None
 
     def test_content_preserved(
         self, vi_en_segments, vi_config, vi_speaker_map
@@ -109,7 +115,8 @@ class TestSpeakers:
             assert s["genderSource"] == "Annotator"
             assert s["speakerNativitySource"] == "Annotator"
             assert s["speakerRoleSource"] == ""  # none are No-Speaker
-            assert s["languages"] == ["vi_VN"]
+            # Real speakers carry both primary and secondary languages.
+            assert s["languages"] == ["vi_VN", "en_VN"]
 
     def test_no_speaker_role_source(self, vi_en_segments, vi_config):
         from src.models import SpeakerMapping
@@ -125,6 +132,13 @@ class TestSpeakers:
         obj = build_conversation_json(vi_en_segments, vi_config, smap)
         s1 = next(s for s in obj["value"]["speakers"] if s["speakerId"] == "S1")
         assert s1["speakerRoleSource"] == "Annotator"
+        assert s1["languages"] == []
+        assert s1["gender"] == "NA"
+        assert s1["speaker_age"] == "NA"
+        assert s1["speakerNativity"] == "NA"
+        # Sources stay "Annotator" even for a No-Speaker.
+        assert s1["genderSource"] == "Annotator"
+        assert s1["speakerNativitySource"] == "Annotator"
 
 
 class TestSerialization:

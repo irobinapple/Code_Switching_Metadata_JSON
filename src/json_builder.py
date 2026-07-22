@@ -1,10 +1,12 @@
 """Build the per-conversation JSON object matching the client's schema.
 
-Key schema points enforced here:
+Key schema points enforced here (client V1 structure):
 - `domainInfo.domainList` is an array containing exactly one object
-- the transliteration key is `Transliteration` (capital T), `null` when blank
+- the transliteration key is lowercase `transliteration`, `null` when blank
 - segments are sorted ascending by numeric `start`
-- `languages` / `speakerDominantVarieties` carry only the primary code
+- `value.languages` carries only the primary code
+- `speakerDominantVarieties` is an array with one object for the primary code
+- a speaker's `languages` is `[primary, secondary]`, or `[]` for a No-Speaker
 """
 
 from __future__ import annotations
@@ -47,7 +49,9 @@ def build_conversation_json(
     secondary = _normalize_code(config.secondary_language_code)
 
     segment_objects = _build_segments(segments, speaker_map, primary, secondary)
-    speaker_objects = _build_speakers(segments, speaker_map, primary)
+    speaker_objects = _build_speakers(
+        segments, speaker_map, primary, secondary
+    )
 
     return {
         "type": {"name": JSON_TYPE_NAME, "version": JSON_TYPE_VERSION},
@@ -79,7 +83,13 @@ def build_conversation_json(
             "languages": [primary],
             "languageInfo": {
                 "spokenLanguages": [primary, secondary],
-                "speakerDominantVarieties": [primary],
+                "speakerDominantVarieties": [
+                    {
+                        "languageLocale": primary,
+                        "languageVariety": [],
+                        "otherLanguageInfluence": [],
+                    }
+                ],
             },
             "domainInfo": {
                 "domainVersion": JSON_DOMAIN_VERSION,
@@ -115,7 +125,7 @@ def _build_segments(
                 "speakerId": mapping.speaker_id,
                 "transcriptionData": {
                     "content": seg.content_text,
-                    "Transliteration": _transliteration_value(""),
+                    "transliteration": _transliteration_value(""),
                 },
             }
         )
@@ -127,6 +137,7 @@ def _build_speakers(
     segments: list[TranscriptSegment],
     speaker_map: dict[str, SpeakerMapping],
     primary: str,
+    secondary: str,
 ) -> list[dict]:
     seen: list[str] = []
     objects: list[dict] = []
@@ -135,20 +146,30 @@ def _build_speakers(
         if mapping.speaker_id in seen:
             continue
         seen.append(mapping.speaker_id)
-        role_source = (
-            ANNOTATOR_SOURCE if mapping.role == NO_SPEAKER_ROLE else ""
-        )
+        is_no_speaker = mapping.role == NO_SPEAKER_ROLE
+        if is_no_speaker:
+            # A No-Speaker (hold music / noise) has no gender/age/nativity
+            # and no spoken languages, per the client schema.
+            gender, age, nativity = "NA", "NA", "NA"
+            languages: list[str] = []
+            role_source = ANNOTATOR_SOURCE
+        else:
+            gender = mapping.gender
+            age = mapping.age_bucket
+            nativity = mapping.nativity
+            languages = [primary, secondary]
+            role_source = ""
         objects.append(
             {
                 "speakerId": mapping.speaker_id,
-                "speaker_age": mapping.age_bucket,
-                "gender": mapping.gender,
+                "speaker_age": age,
+                "gender": gender,
                 "genderSource": ANNOTATOR_SOURCE,
                 "speakerRole": mapping.role,
                 "speakerRoleSource": role_source,
-                "speakerNativity": mapping.nativity,
+                "speakerNativity": nativity,
                 "speakerNativitySource": ANNOTATOR_SOURCE,
-                "languages": [primary],
+                "languages": languages,
             }
         )
     return objects

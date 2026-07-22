@@ -122,16 +122,16 @@ class TestFullValidationSuite:
         result = _full(vi_en_segments, vi_config, vi_speaker_map)
         assert not result.has_blocking_errors, result.errors
 
-    def test_detects_lowercase_transliteration(
+    def test_detects_capital_transliteration(
         self, vi_en_segments, vi_config, vi_speaker_map
     ):
         from src.validators import ValidationResult, validate_json
 
         raw = build_rawmetadata(vi_en_segments, vi_config, vi_speaker_map)
         obj = build_conversation_json(vi_en_segments, vi_config, vi_speaker_map)
-        # Corrupt the key casing and re-serialize.
+        # Corrupt the key casing (capital T is now invalid) and re-serialize.
         bad = json_to_bytes(obj).replace(
-            b'"Transliteration"', b'"transliteration"'
+            b'"transliteration"', b'"Transliteration"'
         )
         result = ValidationResult()
         validate_json(result, obj, bad, raw, vi_en_segments)
