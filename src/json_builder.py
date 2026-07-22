@@ -173,7 +173,11 @@ def _build_speakers(
                 "languages": languages,
             }
         )
-    return objects
+    # No-Speaker(s) listed first, matching the client sample; real speakers
+    # keep their first-appearance order (stable partition).
+    no_speakers = [o for o in objects if o["speakerRole"] == NO_SPEAKER_ROLE]
+    others = [o for o in objects if o["speakerRole"] != NO_SPEAKER_ROLE]
+    return no_speakers + others
 
 
 def json_filename(config: ConversationConfig) -> str:

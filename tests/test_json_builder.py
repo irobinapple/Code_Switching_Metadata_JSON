@@ -179,6 +179,9 @@ class TestSpeakers:
             ),
         }
         obj = build_conversation_json(vi_en_segments, vi_config, smap)
+        # No-Speaker is listed first, matching the client sample, even though
+        # SPK002 (the real speaker) appears first in the transcript.
+        assert obj["value"]["speakers"][0]["speakerRole"] == "No-Speaker"
         s1 = next(s for s in obj["value"]["speakers"] if s["speakerId"] == "S1")
         assert s1["speakerRoleSource"] == "Annotator"
         assert s1["languages"] == []
