@@ -1,0 +1,41 @@
+========================================================
+  Ace - CSMJ Tool  —  How to run (no tech skills needed)
+========================================================
+
+WHAT YOU HAVE
+  A folder called "Code_Switching_Metadata_JSON".
+  Keep the whole folder together — do not move files out of it.
+
+------------------------------------------------
+WINDOWS  (most people)
+------------------------------------------------
+  1. Open the folder.
+  2. Double-click the file named:   Ace-CSMJ.bat
+  3. A black window opens. The FIRST time, it sets things up and
+     may take a couple of minutes — this is normal. Just wait.
+  4. Your web browser opens automatically at:
+        http://localhost:8501
+     That is the tool. Start working there.
+
+  TO STOP:  close the black window.
+  TO START AGAIN LATER:  double-click Ace-CSMJ.bat again
+                         (it will be quick from now on).
+
+  If Windows shows a blue "Windows protected your PC" box:
+     click "More info"  ->  "Run anyway".
+     (This just means the file came from the internet.)
+
+------------------------------------------------
+MAC
+------------------------------------------------
+  1. Open the folder.
+  2. Double-click:   Ace-CSMJ.command
+     (First time only: right-click it -> Open -> Open, to allow it.)
+  3. The browser opens at http://localhost:8501.
+  TO STOP: close the Terminal window that opened.
+
+------------------------------------------------
+NEED HELP?
+------------------------------------------------
+  Send a photo/screenshot of the black window (or Terminal) to
+  whoever set this up for you. That shows exactly what went wrong.

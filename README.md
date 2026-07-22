@@ -57,6 +57,25 @@ pytest
    and downloads for `metadata.csv`, the per-conversation JSON, and both
    validation reports.
 
+## Sharing with non-technical associates
+
+The tool runs entirely on the associate's own machine — no server, no account,
+and uploaded transcripts never leave their computer.
+
+1. **Give them the folder.** On GitHub click **Code → Download ZIP**, or copy
+   the whole project folder to a USB/drive. Keep every file together.
+2. **They double-click the launcher:**
+   - Windows: `Ace-CSMJ.bat`
+   - macOS/Linux: `Ace-CSMJ.command` (first time: right-click → Open)
+3. The first launch installs a self-contained runtime (`uv`, which also fetches
+   the correct Python automatically) and the dependencies — a couple of
+   minutes, one time only. The browser then opens at http://localhost:8501.
+   Later launches start almost instantly.
+
+Plain-language instructions for associates are in **`HOW_TO_RUN.txt`**. To stop
+the app they close the launcher window; to start again they double-click the
+launcher again. To push out an update, re-share the folder.
+
 ## Supported filename examples
 
 Confirmed naming convention:
