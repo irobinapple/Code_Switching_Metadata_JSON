@@ -1,5 +1,5 @@
 @echo off
-setlocal
+setlocal EnableDelayedExpansion
 title Ace - CSMJ Tool
 cd /d "%~dp0"
 
@@ -7,6 +7,24 @@ echo ==================================================
 echo    Ace - CSMJ Tool
 echo ==================================================
 echo.
+
+REM --- Auto-update if this is a Git-linked copy --------------------------
+set "NEED_SYNC="
+if exist ".git\" (
+    where git >nul 2>nul
+    if not errorlevel 1 (
+        echo Checking for updates...
+        set "HEAD_BEFORE="
+        for /f %%i in ('git rev-parse HEAD 2^>nul') do set "HEAD_BEFORE=%%i"
+        git pull --quiet
+        set "HEAD_AFTER="
+        for /f %%i in ('git rev-parse HEAD 2^>nul') do set "HEAD_AFTER=%%i"
+        if not "!HEAD_BEFORE!"=="!HEAD_AFTER!" (
+            echo Updated to the latest version.
+            set "NEED_SYNC=1"
+        )
+    )
+)
 
 REM --- Make sure the uv runtime is available -----------------------------
 set "PATH=%USERPROFILE%\.local\bin;%USERPROFILE%\.cargo\bin;%PATH%"
@@ -33,12 +51,16 @@ if not exist "%USERPROFILE%\.streamlit\credentials.toml" (
     >> "%USERPROFILE%\.streamlit\credentials.toml" echo email = ""
 )
 
-REM --- Build the app environment on first run ----------------------------
+REM --- Build the app environment; re-sync only after an update -----------
 if not exist ".venv\Scripts\streamlit.exe" (
     echo Setting up the app. The first run downloads a few things and may
     echo take a couple of minutes. Later runs start almost instantly.
     echo.
     uv venv --python 3.12
+    set "NEED_SYNC=1"
+)
+if defined NEED_SYNC (
+    echo Installing / updating components...
     uv pip install -r requirements.txt
 )
 
