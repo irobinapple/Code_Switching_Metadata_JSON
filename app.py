@@ -18,6 +18,7 @@ from src.constants import (
     DEFAULT_MASTER_CONVENTION_NAME,
     DOMAIN_CODES,
     SAMPLING_RATES,
+    SPEAKER_AGE_BUCKETS,
     SPEAKER_GENDERS,
     SPEAKER_NATIVITIES,
     SPEAKER_ROLES,
@@ -279,7 +280,7 @@ def _seed_defaults(name, fname_parse, segments, records) -> None:
         )
         st.session_state.setdefault(f"spk_{label}_role", default_role)
         st.session_state.setdefault(f"spk_{label}_gender", "Unknown")
-        st.session_state.setdefault(f"spk_{label}_age", "Unknown")
+        st.session_state.setdefault(f"spk_{label}_age", SPEAKER_AGE_BUCKETS[1])
         st.session_state.setdefault(f"spk_{label}_nativity", "Unknown")
 
 
@@ -390,7 +391,9 @@ def _render_speaker_cards(segments, record) -> None:
             c2.selectbox("Role", SPEAKER_ROLES, key=f"spk_{label}_role")
             c3.selectbox("Gender", SPEAKER_GENDERS, key=f"spk_{label}_gender")
             c4, c5, c6 = st.columns(3)
-            c4.text_input("Age Bucket", key=f"spk_{label}_age")
+            c4.selectbox(
+                "Age Bucket", SPEAKER_AGE_BUCKETS, key=f"spk_{label}_age"
+            )
             c5.selectbox(
                 "Nativity", SPEAKER_NATIVITIES, key=f"spk_{label}_nativity"
             )
@@ -469,7 +472,7 @@ def _stage_preview(records) -> None:
     result = validate_rawmetadata(frame, config, speaker_map, segments)
 
     st.markdown("**All 34 columns — scroll horizontally to review.**")
-    st.dataframe(frame, use_container_width=True, hide_index=True)
+    st.dataframe(frame, hide_index=True)
 
     d1, d2 = st.columns(2)
     d1.download_button(
@@ -587,9 +590,23 @@ def _render_summary_cards(segments, meta_frame, result) -> None:
 # --- Main ------------------------------------------------------------------
 
 
+def _persist_widget_state() -> None:
+    """Pin form values so Streamlit keeps them across stage navigation.
+
+    Streamlit drops a keyed widget's value from session_state on runs where
+    that widget is not rendered. Re-assigning each form key to itself at the
+    top of every run (before any widget is created) prevents that, so values
+    entered on the Configure stage survive on Preview/Generate.
+    """
+    for key in list(st.session_state.keys()):
+        if key.startswith(("cfg_", "spk_")):
+            st.session_state[key] = st.session_state[key]
+
+
 def main() -> None:
     _render_header()
     _init_state()
+    _persist_widget_state()
     records = load_language_records()
 
     with st.sidebar:
