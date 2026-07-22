@@ -53,33 +53,10 @@ def build_conversation_json(
         segments, speaker_map, primary, secondary
     )
 
+    # Key order below mirrors the client's V1 file exactly (values are ours).
     return {
         "type": {"name": JSON_TYPE_NAME, "version": JSON_TYPE_VERSION},
         "value": {
-            "conventionInfo": {
-                "masterConventionName": config.master_convention_name,
-                "customAddendum": config.custom_addendum,
-            },
-            "annotatorInfo": {
-                "loginEncrypted": JSON_LOGIN_ENCRYPTED,
-                "annotatorId": config.annotator_id,
-            },
-            "taskStatus": {
-                "segmentation": {
-                    "workflowStatus": "COMPLETE",
-                    "workflowType": "LABEL",
-                },
-                "speakerId": {
-                    "workflowStatus": "COMPLETE",
-                    "workflowType": "LABEL",
-                },
-                "transcription": {
-                    "workflowStatus": "COMPLETE",
-                    "workflowType": "LABEL",
-                },
-            },
-            "segments": segment_objects,
-            "speakers": speaker_objects,
             "languages": [primary],
             "languageInfo": {
                 "spokenLanguages": [primary, secondary],
@@ -100,6 +77,30 @@ def build_conversation_json(
                     }
                 ],
             },
+            "conventionInfo": {
+                "masterConventionName": config.master_convention_name,
+                "customAddendum": config.custom_addendum,
+            },
+            "annotatorInfo": {
+                "loginEncrypted": JSON_LOGIN_ENCRYPTED,
+                "annotatorId": config.annotator_id,
+            },
+            "speakers": speaker_objects,
+            "segments": segment_objects,
+            "taskStatus": {
+                "segmentation": {
+                    "workflowStatus": "COMPLETE",
+                    "workflowType": "LABEL",
+                },
+                "speakerId": {
+                    "workflowStatus": "COMPLETE",
+                    "workflowType": "LABEL",
+                },
+                "transcription": {
+                    "workflowStatus": "COMPLETE",
+                    "workflowType": "LABEL",
+                },
+            },
         },
     }
 
@@ -117,16 +118,16 @@ def _build_segments(
             {
                 "start": seg.start_sec,
                 "end": seg.end_sec,
-                "segmentId": segment_id(i),
                 "primaryType": DEFAULT_PRIMARY_TYPE,
                 "loudnessLevel": DEFAULT_LOUDNESS_LEVEL,
                 "language": primary,
                 "segmentLanguages": [primary, secondary],
-                "speakerId": mapping.speaker_id,
                 "transcriptionData": {
                     "content": seg.content_text,
                     "transliteration": _transliteration_value(""),
                 },
+                "segmentId": segment_id(i),
+                "speakerId": mapping.speaker_id,
             }
         )
     objects.sort(key=lambda obj: obj["start"])
@@ -162,13 +163,13 @@ def _build_speakers(
         objects.append(
             {
                 "speakerId": mapping.speaker_id,
-                "speaker_age": age,
                 "gender": gender,
+                "speaker_age": age,
                 "genderSource": ANNOTATOR_SOURCE,
-                "speakerRole": mapping.role,
-                "speakerRoleSource": role_source,
                 "speakerNativity": nativity,
                 "speakerNativitySource": ANNOTATOR_SOURCE,
+                "speakerRole": mapping.role,
+                "speakerRoleSource": role_source,
                 "languages": languages,
             }
         )
