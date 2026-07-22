@@ -331,11 +331,11 @@ def validate_json(
         result.error(f"Generated JSON cannot be re-parsed: {exc}")
         return
 
-    # Transliteration key casing.
-    if '"transliteration"' in text:
+    # Transliteration key casing (client V1 uses lowercase).
+    if '"Transliteration"' in text:
         result.error(
-            "JSON uses lowercase 'transliteration'; it must be "
-            "'Transliteration' (capital T)."
+            "JSON uses capital 'Transliteration'; it must be lowercase "
+            "'transliteration'."
         )
 
     # QC_Notes must never leak into JSON.
