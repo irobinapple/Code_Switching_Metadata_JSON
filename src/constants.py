@@ -104,6 +104,7 @@ SAMPLING_RATES: list[str] = ["8kHz", "16kHz", "48kHz", "Custom"]
 SPEAKER_ROLES: list[str] = ["Agent", "Customer", "No-Speaker"]
 SPEAKER_GENDERS: list[str] = ["Male", "Female", "Unknown"]
 SPEAKER_NATIVITIES: list[str] = ["Native", "Non-Native", "Unknown"]
+SPEAKER_AGE_BUCKETS: list[str] = ["18-25", "26-40", "41-65", "65+"]
 
 # --- Defaults --------------------------------------------------------------
 
