@@ -8,18 +8,37 @@ echo    Get Ace - CSMJ Tool  (one-time download)
 echo ==================================================
 echo.
 
-REM --- Git is required for the auto-updating copy ------------------------
+REM --- Ensure Git is available (auto-install via winget if missing) ------
 where git >nul 2>nul
-if errorlevel 1 (
-    echo This setup needs "Git for Windows" ^(a small free download^).
-    echo   1. Get it from  https://git-scm.com/download/win
-    echo   2. Install it ^(just click Next through the installer^).
-    echo   3. Run this file again.
+if not errorlevel 1 goto :HAVE_GIT
+
+echo Git is not installed. Trying a one-time automatic install via winget...
+echo ^(If a Windows permission popup appears, click "Yes".^)
+echo.
+where winget >nul 2>nul
+if errorlevel 1 goto :GIT_MANUAL
+
+winget install --id Git.Git -e --source winget --silent --accept-package-agreements --accept-source-agreements
+
+REM Git was just installed but isn't on THIS window's PATH yet - add it.
+set "PATH=%PATH%;%ProgramFiles%\Git\cmd;%ProgramFiles(x86)%\Git\cmd;%LocalAppData%\Programs\Git\cmd"
+where git >nul 2>nul
+if not errorlevel 1 (
+    echo Git installed successfully.
     echo.
-    pause
-    exit /b 1
+    goto :HAVE_GIT
 )
 
+:GIT_MANUAL
+echo.
+echo Could not install Git automatically on this PC.
+echo Please install "Git for Windows" from  https://git-scm.com/download/win
+echo ^(just click Next through the installer^), then run this file again.
+echo.
+pause
+exit /b 1
+
+:HAVE_GIT
 if exist "Code_Switching_Metadata_JSON\.git\" (
     echo The tool is already downloaded here. Nothing to do.
 ) else (

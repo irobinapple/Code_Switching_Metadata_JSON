@@ -74,9 +74,10 @@ Send associates the single file **`Get-Ace-CSMJ.bat`**. They double-click it; it
 downloads the whole tool into a `Code_Switching_Metadata_JSON` folder. From then
 on, **`Ace-CSMJ.bat` pulls your latest changes automatically on every launch**
 (and only re-installs dependencies when something actually changed, so normal
-launches stay fast and work offline). Requires Git for Windows (the file links
-them to it if missing); on a private repo the first download shows a one-time
-GitHub sign-in.
+launches stay fast and work offline). `Get-Ace-CSMJ.bat` auto-installs Git via
+winget if it's missing (falling back to a manual link only if winget isn't
+available); on a private repo the first download shows a one-time GitHub
+sign-in.
 
 - `Get-Ace-CSMJ.bat` — one-time downloader (the only file you need to send)
 - `Ace-CSMJ.bat` — start the app (auto-updates first)
