@@ -1,4 +1,6 @@
-# Transcript Metadata & JSON Generator
+# Ace - CSMJ Tool
+
+*(Code-Switching Metadata & JSON tool.)*
 
 A local-first Python web app that converts a timestamped, multilingual
 code-switching call-center transcript into delivery-ready outputs:

@@ -115,12 +115,12 @@ section[data-testid="stSidebar"] { background: #f6f8fa; }
 
 def _render_header() -> None:
     st.set_page_config(
-        page_title="Transcript Metadata & JSON Generator",
+        page_title="Ace - CSMJ Tool",
         layout="wide",
         page_icon="🗂️",
     )
     st.markdown(_CSS, unsafe_allow_html=True)
-    st.title("Transcript Metadata & JSON Generator")
+    st.title("Ace - CSMJ Tool")
     st.caption(
         "Convert a timestamped, multilingual code-switching transcript into "
         "rawmetadata, metadata, and per-conversation JSON."
