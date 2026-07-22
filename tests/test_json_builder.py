@@ -16,6 +16,55 @@ def _build(segments, config, speaker_map):
     return build_conversation_json(segments, config, speaker_map)
 
 
+class TestKeyOrderMatchesClient:
+    """Lock the exact key order to the client's V1 layout."""
+
+    def test_value_key_order(self, vi_en_segments, vi_config, vi_speaker_map):
+        obj = _build(vi_en_segments, vi_config, vi_speaker_map)
+        assert list(obj["value"].keys()) == [
+            "languages",
+            "languageInfo",
+            "domainInfo",
+            "conventionInfo",
+            "annotatorInfo",
+            "speakers",
+            "segments",
+            "taskStatus",
+        ]
+
+    def test_segment_key_order(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        obj = _build(vi_en_segments, vi_config, vi_speaker_map)
+        assert list(obj["value"]["segments"][0].keys()) == [
+            "start",
+            "end",
+            "primaryType",
+            "loudnessLevel",
+            "language",
+            "segmentLanguages",
+            "transcriptionData",
+            "segmentId",
+            "speakerId",
+        ]
+
+    def test_speaker_key_order(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        obj = _build(vi_en_segments, vi_config, vi_speaker_map)
+        assert list(obj["value"]["speakers"][0].keys()) == [
+            "speakerId",
+            "gender",
+            "speaker_age",
+            "genderSource",
+            "speakerNativity",
+            "speakerNativitySource",
+            "speakerRole",
+            "speakerRoleSource",
+            "languages",
+        ]
+
+
 class TestStructure:
     def test_type_constants(self, vi_en_segments, vi_config, vi_speaker_map):
         obj = _build(vi_en_segments, vi_config, vi_speaker_map)

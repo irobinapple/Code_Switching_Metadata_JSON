@@ -10,6 +10,12 @@
 '   3. "No-Speaker" speakers now emit gender / speaker_age / speakerNativity
 '      as "NA" (a No-Speaker segment - hold music / noise - has none of
 '      these). Their *Source fields stay "Annotator", same as before.
+'   4. JSON key order now mirrors the client's V1 file exactly at every level
+'      (value -> languages, languageInfo, domainInfo, conventionInfo,
+'      annotatorInfo, speakers, segments, taskStatus; segment ends with
+'      segmentId then speakerId; speaker order gender, speaker_age, ...).
+'      Purely cosmetic - JSON is order-independent - but makes our output
+'      diff-identical to the client sample.
 '   (speakerDominantVarieties was already the array-of-object form in v7 -
 '    it already matches the V1 sample, so no change was needed there.)
 '
@@ -620,18 +626,19 @@ Function BuildConversationJSON(convID As String, wsRaw As Worksheet, wsMeta As W
                 langsOut = "[""" & JSONEscape(primaryLang) & """, """ & JSONEscape(secondaryLang) & """]"
             End If
 
+            ' v8: key order matches the client V1 layout exactly.
             Dim blk As String
             blk = ""
             AddLine blk, "      {"
             AddLine blk, "        ""speakerId"": """ & JSONEscape(wsMeta.Cells(i, 5).Value) & ""","
-            AddLine blk, "        ""speaker_age"": """ & JSONEscape(ageOut) & ""","
             AddLine blk, "        ""gender"": """ & JSONEscape(genderOut) & ""","
+            AddLine blk, "        ""speaker_age"": """ & JSONEscape(ageOut) & ""","
             AddLine blk, "        ""genderSource"": """ & JSONEscape(wsMeta.Cells(i, 9).Value) & ""","
-            AddLine blk, "        ""speakerRole"": """ & JSONEscape(wsMeta.Cells(i, 6).Value) & ""","
-            AddLine blk, "        ""speakerRoleSource"": """ & JSONEscape(wsMeta.Cells(i, 7).Value) & ""","
             AddLine blk, "        ""speakerNativity"": """ & JSONEscape(nativityOut) & ""","
             AddLine blk, "        ""speakerNativitySource"": """ & JSONEscape(wsMeta.Cells(i, 12).Value) & ""","
-            AddLine blk, "        ""languages"": " & langsOut  ' v8: both langs for real speakers, [] for No-Speaker
+            AddLine blk, "        ""speakerRole"": """ & JSONEscape(wsMeta.Cells(i, 6).Value) & ""","
+            AddLine blk, "        ""speakerRoleSource"": """ & JSONEscape(wsMeta.Cells(i, 7).Value) & ""","
+            AddLine blk, "        ""languages"": " & langsOut  ' both langs for real speakers, [] for No-Speaker
             blk = Left(blk, Len(blk) - Len(vbCrLf))
             blk = blk & vbCrLf & "      }"
 
@@ -676,19 +683,20 @@ Function BuildConversationJSON(convID As String, wsRaw As Worksheet, wsMeta As W
 
         Dim sblk As String
         sblk = ""
+        ' v8: key order matches the client V1 layout exactly.
         AddLine sblk, "      {"
         AddLine sblk, "        ""start"": " & FormatNum(wsJson.Cells(r, 4).Value) & ","
         AddLine sblk, "        ""end"": " & FormatNum(wsJson.Cells(r, 5).Value) & ","
-        AddLine sblk, "        ""segmentId"": """ & JSONEscape(wsJson.Cells(r, 2).Value) & ""","
         AddLine sblk, "        ""primaryType"": """ & JSONEscape(wsJson.Cells(r, 6).Value) & ""","
         AddLine sblk, "        ""loudnessLevel"": """ & JSONEscape(wsJson.Cells(r, 7).Value) & ""","
         AddLine sblk, "        ""language"": """ & JSONEscape(wsJson.Cells(r, 8).Value) & ""","
         AddLine sblk, "        ""segmentLanguages"": " & CSVListToJSONArray(wsJson.Cells(r, 9).Value) & ","
-        AddLine sblk, "        ""speakerId"": """ & JSONEscape(wsJson.Cells(r, 3).Value) & ""","
         AddLine sblk, "        ""transcriptionData"": {"
         AddLine sblk, "          ""content"": """ & JSONEscape(wsJson.Cells(r, 10).Value) & ""","
         AddLine sblk, "          ""transliteration"": " & translitJSON   ' v8: lowercase per client V1
-        AddLine sblk, "        }"
+        AddLine sblk, "        },"
+        AddLine sblk, "        ""segmentId"": """ & JSONEscape(wsJson.Cells(r, 2).Value) & ""","
+        AddLine sblk, "        ""speakerId"": """ & JSONEscape(wsJson.Cells(r, 3).Value) & """"
         sblk = Left(sblk, Len(sblk) - Len(vbCrLf))
         sblk = sblk & vbCrLf & "      }"
 
@@ -713,26 +721,8 @@ Function BuildConversationJSON(convID As String, wsRaw As Worksheet, wsMeta As W
     AddLine out, "    ""version"": ""3.2"""
     AddLine out, "  },"
     AddLine out, "  ""value"": {"
-    AddLine out, "    ""conventionInfo"": {"
-    AddLine out, "      ""masterConventionName"": """ & JSONEscape(convention) & ""","
-    AddLine out, "      ""customAddendum"": """ & JSONEscape(addendum) & """"
-    AddLine out, "    },"
-    AddLine out, "    ""annotatorInfo"": {"
-    AddLine out, "      ""loginEncrypted"": ""N/A"","
-    AddLine out, "      ""annotatorId"": """ & JSONEscape(annotator) & """"
-    AddLine out, "    },"
-    AddLine out, "    ""taskStatus"": {"
-    AddLine out, "      ""segmentation"": {""workflowStatus"": ""COMPLETE"", ""workflowType"": ""LABEL""},"
-    AddLine out, "      ""speakerId"": {""workflowStatus"": ""COMPLETE"", ""workflowType"": ""LABEL""},"
-    AddLine out, "      ""transcription"": {""workflowStatus"": ""COMPLETE"", ""workflowType"": ""LABEL""}"
-    AddLine out, "    },"
-    AddLine out, "    ""segments"": ["
-    out = out & segmentsJSON & vbCrLf
-    AddLine out, "    ],"
-    AddLine out, "    ""speakers"": ["
-    out = out & speakersJSON & vbCrLf
-    AddLine out, "    ],"
-    AddLine out, "    ""languages"": [""" & JSONEscape(primaryLang) & """],"  ' rule 2: only primary
+    ' v8: value members are ordered exactly as in the client V1 file.
+    AddLine out, "    ""languages"": [""" & JSONEscape(primaryLang) & """],"  ' only primary
     AddLine out, "    ""languageInfo"": {"
     AddLine out, "      ""spokenLanguages"": [""" & JSONEscape(primaryLang) & """, """ & JSONEscape(secondaryLang) & """],"
     AddLine out, "      ""speakerDominantVarieties"": ["
@@ -741,7 +731,26 @@ Function BuildConversationJSON(convID As String, wsRaw As Worksheet, wsMeta As W
     AddLine out, "    },"
     AddLine out, "    ""domainInfo"": {"
     AddLine out, "      ""domainVersion"": ""1.0"","
-    AddLine out, "      ""domainList"": [{""domain"": ""Call-center"", ""topicList"": [""" & JSONEscape(domain) & """]}]"  ' rule 4/5 - array-wrapped per official schema
+    AddLine out, "      ""domainList"": [{""domain"": ""Call-center"", ""topicList"": [""" & JSONEscape(domain) & """]}]"  ' array-wrapped per official schema
+    AddLine out, "    },"
+    AddLine out, "    ""conventionInfo"": {"
+    AddLine out, "      ""masterConventionName"": """ & JSONEscape(convention) & ""","
+    AddLine out, "      ""customAddendum"": """ & JSONEscape(addendum) & """"
+    AddLine out, "    },"
+    AddLine out, "    ""annotatorInfo"": {"
+    AddLine out, "      ""loginEncrypted"": ""N/A"","
+    AddLine out, "      ""annotatorId"": """ & JSONEscape(annotator) & """"
+    AddLine out, "    },"
+    AddLine out, "    ""speakers"": ["
+    out = out & speakersJSON & vbCrLf
+    AddLine out, "    ],"
+    AddLine out, "    ""segments"": ["
+    out = out & segmentsJSON & vbCrLf
+    AddLine out, "    ],"
+    AddLine out, "    ""taskStatus"": {"
+    AddLine out, "      ""segmentation"": {""workflowStatus"": ""COMPLETE"", ""workflowType"": ""LABEL""},"
+    AddLine out, "      ""speakerId"": {""workflowStatus"": ""COMPLETE"", ""workflowType"": ""LABEL""},"
+    AddLine out, "      ""transcription"": {""workflowStatus"": ""COMPLETE"", ""workflowType"": ""LABEL""}"
     AddLine out, "    }"
     AddLine out, "  }"
     out = out & "}"
