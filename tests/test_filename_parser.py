@@ -79,12 +79,6 @@ class TestLanguageConfigNormalization:
             assert "-" not in rec.primary_language_code
             assert "-" not in rec.secondary_language_code
             assert "_" in rec.primary_language_code
-            assert "_" in rec.secondary_language_code
-
-    def test_no_bare_en(self):
-        for rec in LANGS:
-            assert rec.secondary_language_code != "en"
-            assert rec.secondary_language_code.startswith("en_")
 
     def test_primary_codes_all_distinct(self):
         # Primary codes must be fully distinct — they drive LangPair and
@@ -92,18 +86,20 @@ class TestLanguageConfigNormalization:
         codes = [r.primary_language_code for r in LANGS]
         assert len(codes) == len(set(codes))
 
-    def test_secondary_codes_follow_region_pattern(self):
-        # Secondary codes are always region-paired English (never bare `en`).
-        # They may legitimately repeat for two languages of the same region:
-        # the provided finalized config has Hindi and Tamil both on `en_IN`.
+    def test_secondary_code_rule(self):
+        # Client rule (reversed): the secondary code is bare `en` for every
+        # locale EXCEPT the Indian ones (Hindi & Tamil), which are `en_IN`.
         for rec in LANGS:
-            assert rec.secondary_language_code.startswith("en_")
-        shared = [
+            if rec.language_code.endswith("-IN"):
+                assert rec.secondary_language_code == "en_IN"
+            else:
+                assert rec.secondary_language_code == "en"
+        indian = [
             r.display_name
             for r in LANGS
             if r.secondary_language_code == "en_IN"
         ]
-        assert set(shared) == {"Hindi", "Tamil"}
+        assert set(indian) == {"Hindi", "Tamil"}
 
     def test_locale_uses_hyphen(self):
         for rec in LANGS:
@@ -115,4 +111,4 @@ class TestLanguageConfigNormalization:
         assert vi.language_code == "vi-VN"
         assert vi.metadata_type == "Non-Transliteration"
         assert vi.primary_language_code == "vi_VN"
-        assert vi.secondary_language_code == "en_VN"
+        assert vi.secondary_language_code == "en"

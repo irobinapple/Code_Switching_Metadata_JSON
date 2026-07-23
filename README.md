@@ -148,7 +148,9 @@ Tôi rất bức bội. My flight to Paris was just cancelled and no one told me
   sorted ascending by numeric `start`. `speakerDominantVarieties` is an array
   of one object (`languageLocale` + empty variety/influence arrays); a
   speaker's `languages` is `[primary, secondary]`, or `[]` for a No-Speaker
-  (whose gender/age/nativity are `NA`). Matches the client's V1 schema.
+  (whose gender/age/nativity are `NA`); any No-Speaker is listed first.
+  Matches the client's V1 schema. The secondary (English) code is bare `en`
+  for every locale except the Indian ones (Hindi, Tamil), which use `en_IN`.
 - `QC_Notes` never appears in `metadata.csv` or the JSON.
 
 ## Project layout

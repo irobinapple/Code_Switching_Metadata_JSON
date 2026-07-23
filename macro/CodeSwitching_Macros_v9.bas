@@ -1,6 +1,16 @@
 '=====================================================================
-' CODE-SWITCHING PROJECT - MASTER METADATA WORKBOOK MACROS  (v8)
+' CODE-SWITCHING PROJECT - MASTER METADATA WORKBOOK MACROS  (v9)
 '=====================================================================
+' v9 changes vs v8:
+'   1. Secondary (English) language code: client reversed the earlier rule.
+'      It is now bare "en" for every locale EXCEPT the Indian ones
+'      (Hindi & Tamil), which stay "en_IN". Applied everywhere the code is
+'      emitted - spokenLanguages, each speaker's languages, and
+'      segmentLanguages - via the new NormalizeSecondaryEnglish() helper, so
+'      en_VN / en_BR / en_US / ... all become "en" while en_IN is preserved.
+'   2. speakers array order now lists any "No-Speaker" FIRST, then the real
+'      speakers (matching the client file). Built in two passes.
+'
 ' v8 changes vs v7, to match the client's V1 JSON sample:
 '   1. transcriptionData key "Transliteration" -> "transliteration"
 '      (lowercase t) in every segment.
@@ -83,16 +93,19 @@
 ' HOW TO INSTALL:
 '   1. Open the workbook, Alt+F11
 '   2. Select all existing macro code in the module, delete it
-'   3. Paste this v8 code in
+'   3. Paste this v9 code in
 '   4. Close the VBA editor, save
 '
 ' ALSO DO THIS ONCE IN THE SHEET (not code, just data/format):
 '   - raw_metadata Domain column: make sure values use the short codes
 '     (AIR, BANK, FIN, INS, HEALTH, IT, ECOM, TECHSUPPORT, BILLING,
 '     PRODUCT, ACCOUNT) not full words like "AIRLINE".
-'   - Primary_Language_Code / Secondary_Language_Code /
-'     Speaker_Languages / Segment_Languages: use underscore format
-'     (vi_VN, en_VN) not hyphens (vi-VN) or bare codes (en).
+'   - Primary_Language_Code: underscore format (vi_VN), not hyphens (vi-VN).
+'   - Secondary_Language_Code / Speaker_Languages / Segment_Languages: the
+'     English code is now bare "en" for every locale EXCEPT Indian ones
+'     (Hindi/Tamil = "en_IN"). You may still leave old region-paired values
+'     like "en_VN" in the sheet - v9 auto-collapses them to "en" on export
+'     (and keeps "en_IN"), so either is safe.
 '   - Speaker_Role dropdown: now also accepts "No-Speaker".
 '=====================================================================
 
@@ -456,6 +469,19 @@ Function NormalizeLangCode(code As Variant) As String
     NormalizeLangCode = Replace(CStr(code), "-", "_")
 End Function
 
+' v9: client rule for the SECONDARY (English) code - collapse any region-paired
+' English (en_VN, en_BR, en_US, ...) to bare "en", EXCEPT the Indian pairing
+' "en_IN" (Hindi / Tamil), which is kept as-is. Non-English codes pass through.
+Function NormalizeSecondaryEnglish(code As Variant) As String
+    Dim c As String
+    c = NormalizeLangCode(Trim(CStr(code)))
+    If LCase(Left(c, 3)) = "en_" And LCase(c) <> "en_in" Then
+        NormalizeSecondaryEnglish = "en"
+    Else
+        NormalizeSecondaryEnglish = c
+    End If
+End Function
+
 ' Upper-cases and trims a Domain value (AIR, BANK, FIN, INS, HEALTH,
 ' IT, ECOM, TECHSUPPORT, BILLING, PRODUCT, ACCOUNT expected)
 Function NormalizeDomain(dom As Variant) As String
@@ -514,7 +540,8 @@ Function CSVListToJSONArray(csv As Variant) As String
     ReDim items(LBound(parts) To UBound(parts))
     Dim i As Long
     For i = LBound(parts) To UBound(parts)
-        items(i) = """" & JSONEscape(NormalizeLangCode(Trim(parts(i)))) & """"
+        ' v9: normalize the secondary English code (en_VN -> en, en_IN kept).
+        items(i) = """" & JSONEscape(NormalizeSecondaryEnglish(Trim(parts(i)))) & """"
     Next i
     CSVListToJSONArray = "[" & Join(items, ", ") & "]"
 End Function
@@ -596,55 +623,62 @@ Function BuildConversationJSON(convID As String, wsRaw As Worksheet, wsMeta As W
             annotator = wsRaw.Cells(i, COL_ANNOTATOR).Value
             domain = NormalizeDomain(wsRaw.Cells(i, COL_DOMAIN).Value)
             primaryLang = NormalizeLangCode(wsRaw.Cells(i, COL_PRIMARYLANG).Value)
-            secondaryLang = NormalizeLangCode(wsRaw.Cells(i, COL_SECONDARYLANG).Value)
+            secondaryLang = NormalizeSecondaryEnglish(wsRaw.Cells(i, COL_SECONDARYLANG).Value)  ' v9: en / en_IN rule
             Exit For
         End If
     Next i
 
-    ' --- speakers array (from metadata sheet - already has computed sources) ---
+    ' --- speakers array: No-Speaker(s) first, then the rest (client order) ---
     Dim speakersJSON As String
     Dim spkCount As Long: spkCount = 0
-    For i = 2 To lastMetaRow
-        If Trim(CStr(wsMeta.Cells(i, 3).Value)) = convID Then
-            If spkCount > 0 Then speakersJSON = speakersJSON & "," & vbCrLf
-            spkCount = spkCount + 1
+    Dim spkPass As Integer, emitRow As Boolean
+    Dim spkRoleLocal As String
+    Dim genderOut As String, ageOut As String, nativityOut As String, langsOut As String
+    Dim blk As String
+    For spkPass = 1 To 2
+        For i = 2 To lastMetaRow
+            If Trim(CStr(wsMeta.Cells(i, 3).Value)) = convID Then
+                spkRoleLocal = Trim(CStr(wsMeta.Cells(i, 6).Value))
+                ' v9: pass 1 emits No-Speaker rows, pass 2 emits everyone else.
+                emitRow = (spkPass = 1 And spkRoleLocal = "No-Speaker") Or _
+                          (spkPass = 2 And spkRoleLocal <> "No-Speaker")
+                If emitRow Then
+                    If spkCount > 0 Then speakersJSON = speakersJSON & "," & vbCrLf
+                    spkCount = spkCount + 1
 
-            ' v8: languages and the No-Speaker "NA" attributes depend on role.
-            Dim spkRoleLocal As String
-            spkRoleLocal = Trim(CStr(wsMeta.Cells(i, 6).Value))
+                    ' Languages and the No-Speaker "NA" attributes depend on role.
+                    If spkRoleLocal = "No-Speaker" Then
+                        genderOut = "NA"
+                        ageOut = "NA"
+                        nativityOut = "NA"
+                        langsOut = "[]"
+                    Else
+                        genderOut = CStr(wsMeta.Cells(i, 8).Value)
+                        ageOut = CStr(wsMeta.Cells(i, 10).Value)
+                        nativityOut = CStr(wsMeta.Cells(i, 11).Value)
+                        langsOut = "[""" & JSONEscape(primaryLang) & """, """ & JSONEscape(secondaryLang) & """]"
+                    End If
 
-            Dim genderOut As String, ageOut As String, nativityOut As String, langsOut As String
-            If spkRoleLocal = "No-Speaker" Then
-                genderOut = "NA"
-                ageOut = "NA"
-                nativityOut = "NA"
-                langsOut = "[]"
-            Else
-                genderOut = CStr(wsMeta.Cells(i, 8).Value)
-                ageOut = CStr(wsMeta.Cells(i, 10).Value)
-                nativityOut = CStr(wsMeta.Cells(i, 11).Value)
-                langsOut = "[""" & JSONEscape(primaryLang) & """, """ & JSONEscape(secondaryLang) & """]"
+                    ' Key order matches the client V1 layout exactly.
+                    blk = ""
+                    AddLine blk, "      {"
+                    AddLine blk, "        ""speakerId"": """ & JSONEscape(wsMeta.Cells(i, 5).Value) & ""","
+                    AddLine blk, "        ""gender"": """ & JSONEscape(genderOut) & ""","
+                    AddLine blk, "        ""speaker_age"": """ & JSONEscape(ageOut) & ""","
+                    AddLine blk, "        ""genderSource"": """ & JSONEscape(wsMeta.Cells(i, 9).Value) & ""","
+                    AddLine blk, "        ""speakerNativity"": """ & JSONEscape(nativityOut) & ""","
+                    AddLine blk, "        ""speakerNativitySource"": """ & JSONEscape(wsMeta.Cells(i, 12).Value) & ""","
+                    AddLine blk, "        ""speakerRole"": """ & JSONEscape(wsMeta.Cells(i, 6).Value) & ""","
+                    AddLine blk, "        ""speakerRoleSource"": """ & JSONEscape(wsMeta.Cells(i, 7).Value) & ""","
+                    AddLine blk, "        ""languages"": " & langsOut
+                    blk = Left(blk, Len(blk) - Len(vbCrLf))
+                    blk = blk & vbCrLf & "      }"
+
+                    speakersJSON = speakersJSON & blk
+                End If
             End If
-
-            ' v8: key order matches the client V1 layout exactly.
-            Dim blk As String
-            blk = ""
-            AddLine blk, "      {"
-            AddLine blk, "        ""speakerId"": """ & JSONEscape(wsMeta.Cells(i, 5).Value) & ""","
-            AddLine blk, "        ""gender"": """ & JSONEscape(genderOut) & ""","
-            AddLine blk, "        ""speaker_age"": """ & JSONEscape(ageOut) & ""","
-            AddLine blk, "        ""genderSource"": """ & JSONEscape(wsMeta.Cells(i, 9).Value) & ""","
-            AddLine blk, "        ""speakerNativity"": """ & JSONEscape(nativityOut) & ""","
-            AddLine blk, "        ""speakerNativitySource"": """ & JSONEscape(wsMeta.Cells(i, 12).Value) & ""","
-            AddLine blk, "        ""speakerRole"": """ & JSONEscape(wsMeta.Cells(i, 6).Value) & ""","
-            AddLine blk, "        ""speakerRoleSource"": """ & JSONEscape(wsMeta.Cells(i, 7).Value) & ""","
-            AddLine blk, "        ""languages"": " & langsOut  ' both langs for real speakers, [] for No-Speaker
-            blk = Left(blk, Len(blk) - Len(vbCrLf))
-            blk = blk & vbCrLf & "      }"
-
-            speakersJSON = speakersJSON & blk
-        End If
-    Next i
+        Next i
+    Next spkPass
 
     ' --- segments array (sorted by Start_Time_Sec) ---
     Dim idxList As Collection
