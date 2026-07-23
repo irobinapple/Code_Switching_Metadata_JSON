@@ -4,84 +4,84 @@
     "language_code": "ar-AE",
     "metadata_type": "Transliteration",
     "primary_language_code": "ar_AE",
-    "secondary_language_code": "en_AE"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "Brazilian Portuguese",
     "language_code": "pt-BR",
     "metadata_type": "Non-Transliteration",
     "primary_language_code": "pt_BR",
-    "secondary_language_code": "en_BR"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "Canadian French",
     "language_code": "fr-CA",
     "metadata_type": "Non-Transliteration",
     "primary_language_code": "fr_CA",
-    "secondary_language_code": "en_CA"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "Chinese (Simplified, China)",
     "language_code": "zh-CN",
     "metadata_type": "Non-Transliteration",
     "primary_language_code": "zh_CN",
-    "secondary_language_code": "en_CN"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "Chinese (Traditional Hong Kong)",
     "language_code": "zh-HK",
     "metadata_type": "Non-Transliteration",
     "primary_language_code": "zh_HK",
-    "secondary_language_code": "en_HK"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "Chinese (Traditional Taiwan)",
     "language_code": "zh-TW",
     "metadata_type": "Non-Transliteration",
     "primary_language_code": "zh_TW",
-    "secondary_language_code": "en_TW"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "Danish",
     "language_code": "da-DK",
     "metadata_type": "Non-Transliteration",
     "primary_language_code": "da_DK",
-    "secondary_language_code": "en_DK"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "Dutch",
     "language_code": "nl-NL",
     "metadata_type": "Non-Transliteration",
     "primary_language_code": "nl_NL",
-    "secondary_language_code": "en_NL"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "European French",
     "language_code": "fr-FR",
     "metadata_type": "Non-Transliteration",
     "primary_language_code": "fr_FR",
-    "secondary_language_code": "en_FR"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "European Portuguese",
     "language_code": "pt-PT",
     "metadata_type": "Non-Transliteration",
     "primary_language_code": "pt_PT",
-    "secondary_language_code": "en_PT"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "European Spanish",
     "language_code": "es-ES",
     "metadata_type": "Non-Transliteration",
     "primary_language_code": "es_ES",
-    "secondary_language_code": "en_ES"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "Hebrew",
     "language_code": "he-IL",
     "metadata_type": "Transliteration",
     "primary_language_code": "he_IL",
-    "secondary_language_code": "en_IL"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "Hindi",
@@ -95,49 +95,49 @@
     "language_code": "it-IT",
     "metadata_type": "Non-Transliteration",
     "primary_language_code": "it_IT",
-    "secondary_language_code": "en_IT"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "Japanese",
     "language_code": "ja-JP",
     "metadata_type": "Transliteration",
     "primary_language_code": "ja_JP",
-    "secondary_language_code": "en_JP"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "Korean",
     "language_code": "ko-KR",
     "metadata_type": "Transliteration",
     "primary_language_code": "ko_KR",
-    "secondary_language_code": "en_KR"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "Malay",
     "language_code": "ms-MY",
     "metadata_type": "Non-Transliteration",
     "primary_language_code": "ms_MY",
-    "secondary_language_code": "en_MY"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "Norwegian",
     "language_code": "no-NO",
     "metadata_type": "Non-Transliteration",
     "primary_language_code": "no_NO",
-    "secondary_language_code": "en_NO"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "Standard German",
     "language_code": "de-DE",
     "metadata_type": "Non-Transliteration",
     "primary_language_code": "de_DE",
-    "secondary_language_code": "en_DE"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "Tagalog/Filipino",
     "language_code": "tl-PH",
     "metadata_type": "Non-Transliteration",
     "primary_language_code": "tl_PH",
-    "secondary_language_code": "en_PH"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "Tamil",
@@ -151,27 +151,27 @@
     "language_code": "th-TH",
     "metadata_type": "Transliteration",
     "primary_language_code": "th_TH",
-    "secondary_language_code": "en_TH"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "Turkish",
     "language_code": "tr-TR",
     "metadata_type": "Non-Transliteration",
     "primary_language_code": "tr_TR",
-    "secondary_language_code": "en_TR"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "US Spanish",
     "language_code": "es-US",
     "metadata_type": "Non-Transliteration",
     "primary_language_code": "es_US",
-    "secondary_language_code": "en_US"
+    "secondary_language_code": "en"
   },
   {
     "display_name": "Vietnamese",
     "language_code": "vi-VN",
     "metadata_type": "Non-Transliteration",
     "primary_language_code": "vi_VN",
-    "secondary_language_code": "en_VN"
+    "secondary_language_code": "en"
   }
 ]

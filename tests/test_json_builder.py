@@ -94,7 +94,7 @@ class TestStructure:
     def test_language_info(self, vi_en_segments, vi_config, vi_speaker_map):
         obj = _build(vi_en_segments, vi_config, vi_speaker_map)
         info = obj["value"]["languageInfo"]
-        assert info["spokenLanguages"] == ["vi_VN", "en_VN"]
+        assert info["spokenLanguages"] == ["vi_VN", "en"]
         assert info["speakerDominantVarieties"] == [
             {
                 "languageLocale": "vi_VN",
@@ -165,7 +165,7 @@ class TestSpeakers:
             assert s["speakerNativitySource"] == "Annotator"
             assert s["speakerRoleSource"] == ""  # none are No-Speaker
             # Real speakers carry both primary and secondary languages.
-            assert s["languages"] == ["vi_VN", "en_VN"]
+            assert s["languages"] == ["vi_VN", "en"]
 
     def test_no_speaker_role_source(self, vi_en_segments, vi_config):
         from src.models import SpeakerMapping

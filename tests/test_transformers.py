@@ -78,8 +78,8 @@ class TestRawmetadataValues:
     ):
         frame = build_rawmetadata(vi_en_segments, vi_config, vi_speaker_map)
         assert (frame["Segment_Primary_Language"] == "vi_VN").all()
-        assert (frame["Segment_Languages"] == "vi_VN, en_VN").all()
-        assert (frame["Speaker_Languages"] == "vi_VN, en_VN").all()
+        assert (frame["Segment_Languages"] == "vi_VN, en").all()
+        assert (frame["Speaker_Languages"] == "vi_VN, en").all()
         assert (frame["LangPair"] == "vi-VN_English").all()
 
     def test_speaker_sources(
