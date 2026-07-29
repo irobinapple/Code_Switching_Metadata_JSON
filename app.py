@@ -16,6 +16,7 @@ from src.constants import (
     DEFAULT_CS_RATIO_PRIMARY,
     DEFAULT_CS_RATIO_SECONDARY,
     DEFAULT_MASTER_CONVENTION_NAME,
+    DEFAULT_SPEAKER_LABELS,
     DOMAIN_CODES,
     SAMPLING_RATES,
     SPEAKER_AGE_BUCKETS,
@@ -229,6 +230,15 @@ def _stage_upload(records) -> None:
     st.session_state["uploaded_name"] = uploaded.name
 
     st.success(f"Parsed **{uploaded.name}** — {len(segments)} turn(s) detected.")
+
+    detected = detect_speakers(segments)
+    if detected and set(detected) <= set(DEFAULT_SPEAKER_LABELS):
+        st.info(
+            "This transcript had no speaker labels, so turns were assigned to "
+            f"**{'** / **'.join(detected)}** in alternating order. Please "
+            "confirm the Role (Agent / Customer) for each speaker on the next "
+            "step."
+        )
     tokens = {
         "ConvID": fname_parse.conv_id or "—",
         "Locale": fname_parse.locale or "—",

@@ -8,6 +8,17 @@ format:
 
 Line 1 is `<start> --> <end> [<speaker>]`; subsequent non-timestamp lines are
 appended to that segment's content (single-space separated).
+
+The speaker label is optional. Some transcripts have no diarization labels at
+all — just a bare timestamp line:
+
+    00:00:04,880 --> 00:00:07,980
+    Chào mừng quý khách đến với dịch vụ hỗ trợ hàng không toàn cầu ạ.
+
+For those turns the speaker is filled from `DEFAULT_SPEAKER_LABELS` in
+alternating order (turn 1 -> first label, turn 2 -> second, and so on), which
+matches 2-party call-center calls where turns alternate between the two
+speakers.
 """
 
 from __future__ import annotations
@@ -17,14 +28,18 @@ import re
 
 import pandas as pd
 
+from .constants import DEFAULT_SPEAKER_LABELS
 from .models import TranscriptSegment
 from .timestamp_parser import TimestampError, parse_timestamp_to_seconds
 
 ARROW = "-->"
 
-# A timestamp line: <start> --> <end> then a speaker (bracketed or bare).
+# A timestamp line: <start> --> <end> with an OPTIONAL trailing speaker
+# (bracketed or bare). The speaker group is None when the line is just a
+# timestamp, e.g. "00:00:04,880 --> 00:00:07,980" (with or without trailing
+# whitespace).
 _TS_LINE_RE = re.compile(
-    r"^\s*(?P<start>[\d:,\.]+)\s*-->\s*(?P<end>[\d:,\.]+)\s+(?P<speaker>.+?)\s*$"
+    r"^\s*(?P<start>[\d:,\.]+)\s*-->\s*(?P<end>[\d:,\.]+)\s*(?P<speaker>\S.*?)?\s*$"
 )
 
 
@@ -41,12 +56,15 @@ def parse_transcript_text(text: str) -> list[TranscriptSegment]:
     """Parse raw transcript text into ordered segments.
 
     A line containing the `-->` arrow is treated as a timestamp line and must
-    parse fully, otherwise a TranscriptParseError is raised. Non-timestamp,
-    non-blank lines extend the current segment's content.
+    parse fully, otherwise a TranscriptParseError is raised. The speaker label
+    is optional; turns without one are assigned an alternating default speaker
+    (see module docstring). Non-timestamp, non-blank lines extend the current
+    segment's content.
     """
     segments: list[TranscriptSegment] = []
     current: TranscriptSegment | None = None
     content_parts: list[str] = []
+    unlabeled_turns = 0  # count of turns that arrived without a speaker label
 
     def flush() -> None:
         nonlocal current, content_parts
@@ -70,7 +88,15 @@ def parse_transcript_text(text: str) -> list[TranscriptSegment]:
             flush()
             start_text = match.group("start").strip()
             end_text = match.group("end").strip()
-            speaker = _clean_speaker(match.group("speaker"))
+            raw_speaker = match.group("speaker")
+            speaker = _clean_speaker(raw_speaker) if raw_speaker else ""
+            if not speaker:
+                # No speaker label on this turn: assign an alternating default
+                # so unlabeled 2-party transcripts still get per-speaker output.
+                speaker = DEFAULT_SPEAKER_LABELS[
+                    unlabeled_turns % len(DEFAULT_SPEAKER_LABELS)
+                ]
+                unlabeled_turns += 1
             try:
                 start_sec = parse_timestamp_to_seconds(start_text)
                 end_sec = parse_timestamp_to_seconds(end_text)
