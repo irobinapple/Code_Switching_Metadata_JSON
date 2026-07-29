@@ -79,6 +79,51 @@ class TestBareSpeakerAndBlankLines:
         assert segs[1].content_text == "Bye"
 
 
+class TestNoSpeakerLabels:
+    """Transcripts whose timestamp lines carry no speaker label at all."""
+
+    def test_bare_timestamp_lines_alternate_default_speakers(self):
+        text = (
+            "00:00:04,880 --> 00:00:07,980\nChào mừng quý khách.\n\n"
+            "00:00:09,260 --> 00:00:14,960\nTôi cần được giúp đỡ ngay.\n\n"
+            "00:00:17,100 --> 00:00:20,120\nTôi rất lấy làm tiếc.\n\n"
+            "00:00:20,900 --> 00:00:29,480\nTôi cần bay sang London."
+        )
+        segs = parse_transcript_text(text)
+        assert len(segs) == 4
+        assert [s.speaker_label for s in segs] == [
+            "Speaker 1",
+            "Speaker 2",
+            "Speaker 1",
+            "Speaker 2",
+        ]
+        assert detect_speakers(segs) == ["Speaker 1", "Speaker 2"]
+
+    def test_bare_timestamp_content_and_times_intact(self):
+        text = "00:00:04,880 --> 00:00:07,980\nChào mừng quý khách."
+        seg = parse_transcript_text(text)[0]
+        assert seg.speaker_label == "Speaker 1"
+        assert seg.start_text == "00:00:04,880"
+        assert seg.end_text == "00:00:07,980"
+        assert seg.start_sec == pytest.approx(4.88)
+        assert seg.content_text == "Chào mừng quý khách."
+
+    def test_trailing_whitespace_after_timestamp_is_not_a_speaker(self):
+        # A stray trailing space must not be mistaken for a speaker label.
+        text = "00:00:18,780 --> 00:00:22,700 \nTôi rất tiếc về sự cố này."
+        seg = parse_transcript_text(text)[0]
+        assert seg.speaker_label == "Speaker 1"
+        assert seg.content_text == "Tôi rất tiếc về sự cố này."
+
+    def test_explicit_labels_still_take_precedence(self):
+        text = (
+            "00:00:01,000 --> 00:00:02,000 [SPK001]\nHi\n\n"
+            "00:00:03,000 --> 00:00:04,000 [SPK002]\nBye"
+        )
+        segs = parse_transcript_text(text)
+        assert [s.speaker_label for s in segs] == ["SPK001", "SPK002"]
+
+
 class TestCsvMapped:
     def test_mapped_columns(self):
         frame = pd.DataFrame(
