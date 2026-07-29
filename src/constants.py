@@ -101,6 +101,14 @@ DOMAIN_CODES: list[str] = [
 
 SAMPLING_RATES: list[str] = ["8kHz", "16kHz", "48kHz", "Custom"]
 
+# When a transcript has no speaker labels on its timestamp lines, turns are
+# assigned to these default labels in alternating order (turn 1 -> first,
+# turn 2 -> second, turn 3 -> first, ...). This matches 2-party call-center
+# transcripts, where turns strictly alternate between agent and customer, and
+# feeds the speaker-mapping UI so the first label defaults to Agent and the
+# second to Customer.
+DEFAULT_SPEAKER_LABELS: list[str] = ["Speaker 1", "Speaker 2"]
+
 SPEAKER_ROLES: list[str] = ["Agent", "Customer", "No-Speaker"]
 SPEAKER_GENDERS: list[str] = ["Male", "Female", "Unknown"]
 SPEAKER_NATIVITIES: list[str] = ["Native", "Non-Native", "Unknown"]
