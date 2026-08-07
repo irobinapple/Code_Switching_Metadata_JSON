@@ -92,24 +92,19 @@ def _reset_project() -> None:
 # --- Header & stepper ------------------------------------------------------
 
 
+# Colors come from Streamlit's active theme (see .streamlit/config.toml), not
+# hardcoded values, so text and surfaces always stay legible together.
 _CSS = """
 <style>
-:root { --accent: #1f6feb; }
-.stApp { background-color: #ffffff; }
 .block-container { padding-top: 2rem; max-width: 1200px; }
 h1 { font-size: 1.6rem !important; font-weight: 700; }
-.stButton > button[kind="primary"] {
-    background-color: var(--accent);
-    border-color: var(--accent);
-}
 .stButton > button { border-radius: 6px; }
 div[data-testid="stMetric"] {
-    background: #f6f8fa;
-    border: 1px solid #e4e8ee;
+    background: var(--secondary-background-color);
+    border: 1px solid rgba(128, 128, 128, 0.25);
     border-radius: 8px;
     padding: 0.6rem 0.9rem;
 }
-section[data-testid="stSidebar"] { background: #f6f8fa; }
 </style>
 """
 
