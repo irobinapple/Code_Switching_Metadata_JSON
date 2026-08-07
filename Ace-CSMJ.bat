@@ -9,14 +9,28 @@ echo ==================================================
 echo.
 
 REM --- Auto-update if this is a Git-linked copy --------------------------
+REM The release branch every associate tracks. Set explicitly so the copy
+REM never drifts onto a feature branch or the repo's default branch.
+set "APP_BRANCH=main"
 set "NEED_SYNC="
 if exist ".git\" (
     where git >nul 2>nul
     if not errorlevel 1 (
         echo Checking for updates...
+        set "CUR_BRANCH="
+        for /f %%i in ('git rev-parse --abbrev-ref HEAD 2^>nul') do set "CUR_BRANCH=%%i"
+        if not "!CUR_BRANCH!"=="%APP_BRANCH%" (
+            echo Switching this copy to the %APP_BRANCH% branch...
+            git checkout %APP_BRANCH% >nul 2>nul
+            if errorlevel 1 git checkout -b %APP_BRANCH% origin/%APP_BRANCH% >nul 2>nul
+        )
         set "HEAD_BEFORE="
         for /f %%i in ('git rev-parse HEAD 2^>nul') do set "HEAD_BEFORE=%%i"
-        git pull --quiet
+        git pull --quiet origin %APP_BRANCH%
+        if errorlevel 1 (
+            echo Could not download updates ^(offline or a local edit is in the
+            echo way^) - starting the version you already have.
+        )
         set "HEAD_AFTER="
         for /f %%i in ('git rev-parse HEAD 2^>nul') do set "HEAD_AFTER=%%i"
         if not "!HEAD_BEFORE!"=="!HEAD_AFTER!" (

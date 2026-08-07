@@ -351,10 +351,21 @@ def _stage_configure(records) -> None:
         c1.number_input(
             "CS Ratio Primary",
             key="cfg_cs_primary",
-            step=1,
-            help="Primary vs secondary should total 100.",
+            min_value=0.0,
+            max_value=100.0,
+            step=0.1,
+            format="%.1f",
+            help="Decimals allowed (e.g. 60.8). Should total 100 with the "
+            "secondary ratio.",
         )
-        c2.number_input("CS Ratio Secondary", key="cfg_cs_secondary", step=1)
+        c2.number_input(
+            "CS Ratio Secondary",
+            key="cfg_cs_secondary",
+            min_value=0.0,
+            max_value=100.0,
+            step=0.1,
+            format="%.1f",
+        )
 
     with st.expander("Paths & convention"):
         st.text_input("Conversation Script Path", key="cfg_script_path")
@@ -429,8 +440,8 @@ def _assemble_config(records) -> ConversationConfig:
         master_convention_name=st.session_state.get("cfg_master", ""),
         custom_addendum=st.session_state.get("cfg_addendum", ""),
         annotator_id=st.session_state.get("cfg_annotator", "").strip(),
-        cs_ratio_primary=st.session_state.get("cfg_cs_primary", 0),
-        cs_ratio_secondary=st.session_state.get("cfg_cs_secondary", 0),
+        cs_ratio_primary=float(st.session_state.get("cfg_cs_primary", 0.0)),
+        cs_ratio_secondary=float(st.session_state.get("cfg_cs_secondary", 0.0)),
     )
 
 

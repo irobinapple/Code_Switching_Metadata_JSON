@@ -206,6 +206,47 @@ class TestMetadata:
         assert data.startswith(b"\xef\xbb\xbf")
 
 
+class TestDecimalCsRatios:
+    """CS ratios may be fractional, e.g. a 60.8 / 39.2 split."""
+
+    def _decimal_config(self, vi_config):
+        import dataclasses
+
+        return dataclasses.replace(
+            vi_config, cs_ratio_primary=60.8, cs_ratio_secondary=39.2
+        )
+
+    def test_rawmetadata_keeps_decimals(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        cfg = self._decimal_config(vi_config)
+        frame = build_rawmetadata(vi_en_segments, cfg, vi_speaker_map)
+        assert (frame["CS_Ratio_Primary"] == 60.8).all()
+        assert (frame["CS_Ratio_Secondary"] == 39.2).all()
+
+    def test_metadata_keeps_decimals(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        cfg = self._decimal_config(vi_config)
+        frame = build_metadata(vi_en_segments, cfg, vi_speaker_map)
+        assert (frame["CS_Ratio_Primary"] == 60.8).all()
+        assert (frame["CS_Ratio_Secondary"] == 39.2).all()
+
+    def test_decimal_split_totalling_100_does_not_warn(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        from src.validators import validate_rawmetadata
+
+        cfg = self._decimal_config(vi_config)
+        frame = build_rawmetadata(vi_en_segments, cfg, vi_speaker_map)
+        result = validate_rawmetadata(
+            frame, cfg, vi_speaker_map, vi_en_segments
+        )
+        # 60.8 + 39.2 must not trip the "ratios do not total 100" warning
+        # despite binary floating-point representation.
+        assert not any("total" in w for w in result.warnings), result.warnings
+
+
 class TestHelpers:
     def test_filename_stem(self, vi_config):
         assert build_filename_stem(vi_config) == (
