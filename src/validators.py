@@ -17,6 +17,7 @@ import pandas as pd
 from .constants import (
     DOMAIN_CODES,
     METADATA_COLUMNS,
+    METADATA_TYPE_TRANSLITERATION,
     NO_SPEAKER_ROLE,
     RAWMETADATA_COLUMNS,
     SAMPLING_RATES,
@@ -249,7 +250,9 @@ def run_full_validation(
     _check_turn_no_sequential(result, raw_frame)
     _check_numeric_times(result, segments)
     validate_metadata(result, meta_frame, raw_frame, segments)
-    validate_json(result, json_obj, json_bytes, raw_frame, segments)
+    validate_json(
+        result, json_obj, json_bytes, raw_frame, segments, config.metadata_type
+    )
     return result
 
 
@@ -311,12 +314,41 @@ def validate_metadata(
         result.error("QC_Notes must not appear in metadata.")
 
 
+def _check_transliteration_presence(
+    result: ValidationResult,
+    json_segments: list[dict],
+    metadata_type: str | None,
+) -> None:
+    """Transliteration key must be absent for Non-Transliteration languages.
+
+    Transliteration-type languages keep the key on every segment.
+    """
+    if metadata_type is None:
+        return
+    is_translit = metadata_type == METADATA_TYPE_TRANSLITERATION
+    for index, seg in enumerate(json_segments, start=1):
+        present = "transliteration" in seg.get("transcriptionData", {})
+        if is_translit and not present:
+            result.error(
+                f"Segment {index}: the transliteration key is missing, but "
+                f"{metadata_type} files must include it."
+            )
+            return
+        if not is_translit and present:
+            result.error(
+                f"Segment {index}: the transliteration key must be omitted "
+                f"entirely for {metadata_type} files."
+            )
+            return
+
+
 def validate_json(
     result: ValidationResult,
     json_obj: dict,
     json_bytes: bytes,
     raw_frame: pd.DataFrame,
     segments: list[TranscriptSegment],
+    metadata_type: str | None = None,
 ) -> None:
     """JSON parseability, structure, ordering, and schema-literal checks."""
     # Re-parse to confirm serializability/round-trip.
@@ -345,6 +377,8 @@ def validate_json(
     value = reloaded.get("value", {})
     json_segments = value.get("segments", [])
     json_speakers = value.get("speakers", [])
+
+    _check_transliteration_presence(result, json_segments, metadata_type)
 
     # Segment count equals rawmetadata row count.
     if len(json_segments) != len(raw_frame):

@@ -2,7 +2,8 @@
 
 Key schema points enforced here (client V1 structure):
 - `domainInfo.domainList` is an array containing exactly one object
-- the transliteration key is lowercase `transliteration`, `null` when blank
+- the `transliteration` key (lowercase) is omitted entirely for
+  `Non-Transliteration` languages, and present for `Transliteration` ones
 - segments are sorted ascending by numeric `start`
 - `value.languages` carries only the primary code
 - `speakerDominantVarieties` is an array with one object for the primary code
@@ -22,6 +23,7 @@ from .constants import (
     JSON_LOGIN_ENCRYPTED,
     JSON_TYPE_NAME,
     JSON_TYPE_VERSION,
+    METADATA_TYPE_TRANSLITERATION,
     NO_SPEAKER_ROLE,
 )
 from .models import ConversationConfig, SpeakerMapping, TranscriptSegment
@@ -48,7 +50,14 @@ def build_conversation_json(
     primary = _normalize_code(config.primary_language_code)
     secondary = _normalize_code(config.secondary_language_code)
 
-    segment_objects = _build_segments(segments, speaker_map, primary, secondary)
+    # Only Transliteration-type languages carry the transliteration key at
+    # all; for Non-Transliteration it is omitted entirely, per client feedback.
+    include_transliteration = (
+        config.metadata_type == METADATA_TYPE_TRANSLITERATION
+    )
+    segment_objects = _build_segments(
+        segments, speaker_map, primary, secondary, include_transliteration
+    )
     speaker_objects = _build_speakers(
         segments, speaker_map, primary, secondary
     )
@@ -110,10 +119,14 @@ def _build_segments(
     speaker_map: dict[str, SpeakerMapping],
     primary: str,
     secondary: str,
+    include_transliteration: bool,
 ) -> list[dict]:
     objects: list[dict] = []
     for i, seg in enumerate(segments, start=1):
         mapping = speaker_map[seg.speaker_label]
+        transcription_data: dict[str, object] = {"content": seg.content_text}
+        if include_transliteration:
+            transcription_data["transliteration"] = _transliteration_value("")
         objects.append(
             {
                 "start": seg.start_sec,
@@ -122,10 +135,7 @@ def _build_segments(
                 "loudnessLevel": DEFAULT_LOUDNESS_LEVEL,
                 "language": primary,
                 "segmentLanguages": [primary, secondary],
-                "transcriptionData": {
-                    "content": seg.content_text,
-                    "transliteration": _transliteration_value(""),
-                },
+                "transcriptionData": transcription_data,
                 "segmentId": segment_id(i),
                 "speakerId": mapping.speaker_id,
             }

@@ -127,15 +127,58 @@ class TestFullValidationSuite:
     ):
         from src.validators import ValidationResult, validate_json
 
-        raw = build_rawmetadata(vi_en_segments, vi_config, vi_speaker_map)
-        obj = build_conversation_json(vi_en_segments, vi_config, vi_speaker_map)
-        # Corrupt the key casing (capital T is now invalid) and re-serialize.
+        # Use a Transliteration-type config, since Non-Transliteration files
+        # omit the key entirely and so have no casing to get wrong.
+        cfg = dataclasses.replace(vi_config, metadata_type="Transliteration")
+        raw = build_rawmetadata(vi_en_segments, cfg, vi_speaker_map)
+        obj = build_conversation_json(vi_en_segments, cfg, vi_speaker_map)
+        # Corrupt the key casing (capital T is invalid) and re-serialize.
         bad = json_to_bytes(obj).replace(
             b'"transliteration"', b'"Transliteration"'
         )
         result = ValidationResult()
         validate_json(result, obj, bad, raw, vi_en_segments)
         assert any("lowercase" in e for e in result.errors)
+
+    def test_flags_transliteration_key_present_when_it_must_be_absent(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        from src.validators import ValidationResult, validate_json
+
+        raw = build_rawmetadata(vi_en_segments, vi_config, vi_speaker_map)
+        obj = build_conversation_json(vi_en_segments, vi_config, vi_speaker_map)
+        # Re-introduce the key on a Non-Transliteration file.
+        obj["value"]["segments"][0]["transcriptionData"]["transliteration"] = None
+        result = ValidationResult()
+        validate_json(
+            result,
+            obj,
+            json_to_bytes(obj),
+            raw,
+            vi_en_segments,
+            "Non-Transliteration",
+        )
+        assert any("omitted entirely" in e for e in result.errors)
+
+    def test_flags_transliteration_key_missing_when_required(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        from src.validators import ValidationResult, validate_json
+
+        # Non-Transliteration build has no key; validating it as a
+        # Transliteration file must flag the omission.
+        raw = build_rawmetadata(vi_en_segments, vi_config, vi_speaker_map)
+        obj = build_conversation_json(vi_en_segments, vi_config, vi_speaker_map)
+        result = ValidationResult()
+        validate_json(
+            result,
+            obj,
+            json_to_bytes(obj),
+            raw,
+            vi_en_segments,
+            "Transliteration",
+        )
+        assert any("missing" in e for e in result.errors)
 
     def test_detects_domainlist_not_array(
         self, vi_en_segments, vi_config, vi_speaker_map

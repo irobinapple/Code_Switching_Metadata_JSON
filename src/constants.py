@@ -116,7 +116,7 @@ SPEAKER_AGE_BUCKETS: list[str] = ["18-25", "26-40", "41-65", "65+"]
 
 # --- Defaults --------------------------------------------------------------
 
-DEFAULT_MASTER_CONVENTION_NAME = "ClientTranscriptionGuidelines_en_US_3.2"
+DEFAULT_MASTER_CONVENTION_NAME = "awsTranscriptionGuidelines_en_US_3.2"
 DEFAULT_PRIMARY_TYPE = "Speech"
 DEFAULT_LOUDNESS_LEVEL = "Normal"
 DEFAULT_CS_RATIO_PRIMARY = 70

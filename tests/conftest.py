@@ -42,7 +42,7 @@ def vi_config(vietnamese_record) -> ConversationConfig:
         recording_date="2026-07-21",
         conversation_script_path="vi-VN_English_AIR_48kHz_Conv0347.txt",
         audio_file_path="",
-        master_convention_name="ClientTranscriptionGuidelines_en_US_3.2",
+        master_convention_name="awsTranscriptionGuidelines_en_US_3.2",
         custom_addendum="vi_VN_2.0",
         annotator_id="ann_042",
         cs_ratio_primary=70,

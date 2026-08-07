@@ -50,7 +50,7 @@ def _seed_full_config(at, segments) -> None:
     at.session_state["cfg_cs_primary"] = 70
     at.session_state["cfg_cs_secondary"] = 30
     at.session_state["cfg_script_path"] = "vi-VN_English_AIR_48kHz_Conv0347.txt"
-    at.session_state["cfg_master"] = "ClientTranscriptionGuidelines_en_US_3.2"
+    at.session_state["cfg_master"] = "awsTranscriptionGuidelines_en_US_3.2"
     at.session_state["cfg_audio_path"] = ""
     for lbl, sid, role in [("SPK001", "S1", "Agent"), ("SPK002", "S2", "Customer")]:
         at.session_state[f"spk_{lbl}_id"] = sid
