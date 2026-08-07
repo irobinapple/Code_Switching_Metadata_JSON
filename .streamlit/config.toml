@@ -1,0 +1,16 @@
+# Ace - CSMJ Tool — fixed light theme.
+#
+# The app is designed as a calm, white, high-contrast data-operations
+# interface. Without this block Streamlit follows the viewer's OS dark-mode
+# preference, which left text and buttons unreadable against the app's light
+# surfaces. Pinning the theme here keeps every machine looking identical.
+[theme]
+base = "light"
+primaryColor = "#1f6feb"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f6f8fa"
+textColor = "#1f2328"
+
+[browser]
+# Local-first tool handling client transcripts: no usage telemetry.
+gatherUsageStats = false
