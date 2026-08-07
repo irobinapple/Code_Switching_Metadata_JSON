@@ -10,11 +10,22 @@ echo "=================================================="
 echo
 
 # --- Auto-update if this is a Git-linked copy ------------------------------
+# The release branch every associate tracks, set explicitly so the copy never
+# drifts onto a feature branch or the repo's default branch.
+APP_BRANCH=main
 NEED_SYNC=0
 if [ -d ".git" ] && command -v git >/dev/null 2>&1; then
     echo "Checking for updates..."
+    CUR_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo none)
+    if [ "$CUR_BRANCH" != "$APP_BRANCH" ]; then
+        echo "Switching this copy to the $APP_BRANCH branch..."
+        git checkout "$APP_BRANCH" >/dev/null 2>&1 || \
+            git checkout -b "$APP_BRANCH" "origin/$APP_BRANCH" >/dev/null 2>&1 || true
+    fi
     BEFORE=$(git rev-parse HEAD 2>/dev/null || echo none)
-    git pull --quiet || true
+    if ! git pull --quiet origin "$APP_BRANCH"; then
+        echo "Could not download updates - starting the version you have."
+    fi
     AFTER=$(git rev-parse HEAD 2>/dev/null || echo none)
     if [ "$BEFORE" != "$AFTER" ]; then
         echo "Updated to the latest version."

@@ -119,8 +119,9 @@ SPEAKER_AGE_BUCKETS: list[str] = ["18-25", "26-40", "41-65", "65+"]
 DEFAULT_MASTER_CONVENTION_NAME = "awsTranscriptionGuidelines_en_US_3.2"
 DEFAULT_PRIMARY_TYPE = "Speech"
 DEFAULT_LOUDNESS_LEVEL = "Normal"
-DEFAULT_CS_RATIO_PRIMARY = 70
-DEFAULT_CS_RATIO_SECONDARY = 30
+# Floats so the UI accepts fractional splits such as 60.8 / 39.2.
+DEFAULT_CS_RATIO_PRIMARY = 70.0
+DEFAULT_CS_RATIO_SECONDARY = 30.0
 DEFAULT_DOMAIN_TOPIC = "Call-center"
 
 # --- Fixed JSON schema constants -------------------------------------------

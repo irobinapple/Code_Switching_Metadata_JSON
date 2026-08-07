@@ -43,7 +43,8 @@ if exist "Code_Switching_Metadata_JSON\.git\" (
     echo The tool is already downloaded here. Nothing to do.
 ) else (
     echo Downloading the tool... a sign-in window may appear the first time.
-    git clone https://github.com/irobinapple/Code_Switching_Metadata_JSON.git
+    REM -b main pins the release branch, independent of the repo default.
+    git clone -b main https://github.com/irobinapple/Code_Switching_Metadata_JSON.git
     if errorlevel 1 (
         echo.
         echo Download failed. Check your internet connection / access and retry.
