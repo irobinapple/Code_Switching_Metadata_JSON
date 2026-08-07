@@ -128,14 +128,32 @@ class TestSegments:
         starts = [s["start"] for s in obj["value"]["segments"]]
         assert starts == sorted(starts)
 
-    def test_transliteration_lowercase_and_null(
+    def test_transliteration_omitted_for_non_transliteration(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        # Vietnamese is Non-Transliteration: the key must be absent entirely,
+        # not present-as-null.
+        obj = _build(vi_en_segments, vi_config, vi_speaker_map)
+        for seg in obj["value"]["segments"]:
+            assert "transliteration" not in seg["transcriptionData"]
+            assert "Transliteration" not in seg["transcriptionData"]
+            assert list(seg["transcriptionData"].keys()) == ["content"]
+
+    def test_transliteration_present_for_transliteration_type(
+        self, vi_en_segments, vi_config, vi_speaker_map
+    ):
+        # A Transliteration-type language keeps the key on every segment.
+        cfg = dataclasses.replace(vi_config, metadata_type="Transliteration")
+        obj = build_conversation_json(vi_en_segments, cfg, vi_speaker_map)
+        for seg in obj["value"]["segments"]:
+            assert "transliteration" in seg["transcriptionData"]
+
+    def test_transliteration_absent_from_serialized_json(
         self, vi_en_segments, vi_config, vi_speaker_map
     ):
         obj = _build(vi_en_segments, vi_config, vi_speaker_map)
-        seg = obj["value"]["segments"][0]
-        assert "transliteration" in seg["transcriptionData"]
-        assert "Transliteration" not in seg["transcriptionData"]
-        assert seg["transcriptionData"]["transliteration"] is None
+        text = json_to_bytes(obj).decode("utf-8")
+        assert "transliteration" not in text
 
     def test_content_preserved(
         self, vi_en_segments, vi_config, vi_speaker_map

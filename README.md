@@ -143,9 +143,10 @@ Tôi rất bức bội. My flight to Paris was just cancelled and no one told me
 - `metadata` duration is conversation-level (same on every speaker row);
   `Number_of_Turns` is per-speaker only.
 - JSON uses `ensure_ascii=False` (multilingual text preserved),
-  `domainInfo.domainList` is an **array** of one object, the transliteration
-  key is lowercase `transliteration` (`null` when blank), and segments are
-  sorted ascending by numeric `start`. `speakerDominantVarieties` is an array
+  `domainInfo.domainList` is an **array** of one object, and segments are
+  sorted ascending by numeric `start`. The lowercase `transliteration` key is
+  **omitted entirely** for `Non-Transliteration` languages and present for
+  `Transliteration` ones. `speakerDominantVarieties` is an array
   of one object (`languageLocale` + empty variety/influence arrays); a
   speaker's `languages` is `[primary, secondary]`, or `[]` for a No-Speaker
   (whose gender/age/nativity are `NA`); any No-Speaker is listed first.
