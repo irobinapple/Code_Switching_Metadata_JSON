@@ -46,7 +46,7 @@ def _seed_full_config(at, segments) -> None:
     at.session_state["cfg_language"] = "Vietnamese"
     at.session_state["cfg_domain"] = "AIR"
     at.session_state["cfg_sampling"] = "48kHz"
-    at.session_state["cfg_annotator"] = ""
+    at.session_state["cfg_annotator"] = None
     at.session_state["cfg_cs_primary"] = 70
     at.session_state["cfg_cs_secondary"] = 30
     at.session_state["cfg_script_path"] = "vi-VN_English_AIR_48kHz_Conv0347.txt"
@@ -60,11 +60,65 @@ def _seed_full_config(at, segments) -> None:
         at.session_state[f"spk_{lbl}_nativity"] = "Unknown"
 
 
-def _text_input_by_key(at, key):
-    for widget in at.text_input:
+def _widget_by_key(widgets, key):
+    for widget in widgets:
         if widget.key == key:
             return widget
     raise KeyError(key)
+
+
+def _secondary_ratio_widget(at):
+    return next(
+        n for n in at.number_input if n.label == "CS Ratio Secondary"
+    )
+
+
+class TestDerivedSecondaryCsRatio:
+    """Secondary ratio is always 100 - primary, and never user-editable."""
+
+    def _configured(self, segments, primary):
+        at = AppTest.from_file(str(APP), default_timeout=30)
+        _seed_full_config(at, segments)
+        at.session_state["cfg_cs_primary"] = primary
+        at.session_state["stage"] = 1
+        at.run()
+        assert not at.exception, at.exception
+        return at
+
+    def test_whole_number_primary(self, vi_en_segments):
+        at = self._configured(vi_en_segments, 70.0)
+        assert _secondary_ratio_widget(at).value == 30.0
+
+    def test_decimal_primary(self, vi_en_segments):
+        at = self._configured(vi_en_segments, 60.8)
+        assert _secondary_ratio_widget(at).value == 39.2
+
+    def test_secondary_is_disabled(self, vi_en_segments):
+        at = self._configured(vi_en_segments, 70.0)
+        assert _secondary_ratio_widget(at).disabled
+
+
+class TestAnnotatorIdDropdown:
+    def _configured(self, segments, annotator):
+        at = AppTest.from_file(str(APP), default_timeout=30)
+        _seed_full_config(at, segments)
+        at.session_state["cfg_annotator"] = annotator
+        at.session_state["stage"] = 1
+        at.run()
+        assert not at.exception, at.exception
+        return at
+
+    def test_lists_the_configured_ids(self, vi_en_segments):
+        from src.constants import ANNOTATOR_IDS
+
+        at = self._configured(vi_en_segments, None)
+        options = list(_widget_by_key(at.selectbox, "cfg_annotator").options)
+        assert options == ANNOTATOR_IDS
+
+    def test_accepts_an_id_outside_the_list(self, vi_en_segments):
+        # What typing a new ID in the browser produces.
+        at = self._configured(vi_en_segments, "annot_099")
+        assert at.session_state["cfg_annotator"] == "annot_099"
 
 
 def test_annotator_id_survives_navigation(vi_en_segments):
@@ -75,7 +129,7 @@ def test_annotator_id_survives_navigation(vi_en_segments):
     _seed_full_config(at, vi_en_segments)
     at.session_state["stage"] = 1
     at.run()
-    _text_input_by_key(at, "cfg_annotator").set_value("annot_001").run()
+    _widget_by_key(at.selectbox, "cfg_annotator").set_value("annot_001").run()
 
     at.session_state["stage"] = 3
     at.run()

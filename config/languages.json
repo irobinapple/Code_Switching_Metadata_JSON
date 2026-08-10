@@ -1,6 +1,13 @@
 [
   {
-    "display_name": "Arabic",
+    "display_name": "Arabic (Saudi Arabia)",
+    "language_code": "ar-SA",
+    "metadata_type": "Transliteration",
+    "primary_language_code": "ar_SA",
+    "secondary_language_code": "en"
+  },
+  {
+    "display_name": "Arabic (UAE)",
     "language_code": "ar-AE",
     "metadata_type": "Transliteration",
     "primary_language_code": "ar_AE",
@@ -18,6 +25,13 @@
     "language_code": "fr-CA",
     "metadata_type": "Non-Transliteration",
     "primary_language_code": "fr_CA",
+    "secondary_language_code": "en"
+  },
+  {
+    "display_name": "Catalan",
+    "language_code": "ca-ES",
+    "metadata_type": "Non-Transliteration",
+    "primary_language_code": "ca_ES",
     "secondary_language_code": "en"
   },
   {
@@ -77,6 +91,20 @@
     "secondary_language_code": "en"
   },
   {
+    "display_name": "Finnish",
+    "language_code": "fi-FI",
+    "metadata_type": "Non-Transliteration",
+    "primary_language_code": "fi_FI",
+    "secondary_language_code": "en"
+  },
+  {
+    "display_name": "French Arabic",
+    "language_code": "ar-FR",
+    "metadata_type": "Transliteration",
+    "primary_language_code": "ar_FR",
+    "secondary_language_code": "en"
+  },
+  {
     "display_name": "Hebrew",
     "language_code": "he-IL",
     "metadata_type": "Transliteration",
@@ -126,10 +154,31 @@
     "secondary_language_code": "en"
   },
   {
+    "display_name": "Russian",
+    "language_code": "ru-RU",
+    "metadata_type": "Transliteration",
+    "primary_language_code": "ru_RU",
+    "secondary_language_code": "en"
+  },
+  {
     "display_name": "Standard German",
     "language_code": "de-DE",
     "metadata_type": "Non-Transliteration",
     "primary_language_code": "de_DE",
+    "secondary_language_code": "en"
+  },
+  {
+    "display_name": "Swedish",
+    "language_code": "sv-SE",
+    "metadata_type": "Non-Transliteration",
+    "primary_language_code": "sv_SE",
+    "secondary_language_code": "en"
+  },
+  {
+    "display_name": "Swiss German",
+    "language_code": "de-CH",
+    "metadata_type": "Non-Transliteration",
+    "primary_language_code": "de_CH",
     "secondary_language_code": "en"
   },
   {
