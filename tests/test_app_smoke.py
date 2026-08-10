@@ -67,6 +67,34 @@ def _widget_by_key(widgets, key):
     raise KeyError(key)
 
 
+def test_no_widget_default_vs_session_state_warning(vi_en_segments, caplog):
+    """Speaker cards must not warn about a value set two ways.
+
+    The read-only "Speaker Languages" box is created with an explicit value,
+    so it must be excluded from the session-state pin in _persist_widget_state
+    or Streamlit logs a warning on every rerun.
+    """
+    import logging
+
+    for name in list(logging.root.manager.loggerDict):
+        if name.startswith("streamlit"):
+            logging.getLogger(name).propagate = True
+
+    at = AppTest.from_file(str(APP), default_timeout=30)
+    _seed_full_config(at, vi_en_segments)
+    at.session_state["stage"] = 1
+    with caplog.at_level(logging.WARNING):
+        at.run()
+        at.run()  # the pin only collides once the key already exists
+
+    offending = [
+        r.getMessage()
+        for r in caplog.records
+        if "default value but also had its value set" in r.getMessage()
+    ]
+    assert not offending, offending
+
+
 def _secondary_ratio_widget(at):
     return next(
         n for n in at.number_input if n.label == "CS Ratio Secondary"
