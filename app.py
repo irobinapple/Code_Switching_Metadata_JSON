@@ -13,8 +13,8 @@ import pandas as pd
 import streamlit as st
 
 from src.constants import (
+    ANNOTATOR_IDS,
     DEFAULT_CS_RATIO_PRIMARY,
-    DEFAULT_CS_RATIO_SECONDARY,
     DEFAULT_MASTER_CONVENTION_NAME,
     DEFAULT_SPEAKER_LABELS,
     DOMAIN_CODES,
@@ -214,6 +214,22 @@ def _stage_upload(records) -> None:
 
     fname_parse = parse_filename(uploaded.name, records)
 
+    # A filename that breaks the client naming convention is a hard stop: the
+    # name itself ships as Conversation_Script_Path, so it must be corrected
+    # at the source rather than worked around here.
+    if fname_parse.is_blocked:
+        for message in fname_parse.errors:
+            st.error(message)
+        if fname_parse.suggested_filename:
+            st.markdown("**Rename the file to:**")
+            st.code(fname_parse.suggested_filename, language=None)
+        st.info(
+            "Rename the file on your computer, then upload it again. "
+            "Client deliveries must use a hyphen inside the language code "
+            "(e.g. `fr-FR`), not an underscore."
+        )
+        return
+
     # Reset form defaults only when a genuinely new file is processed.
     new_key = f"{uploaded.name}:{len(data)}"
     if st.session_state.get("processed_key") != new_key:
@@ -273,9 +289,12 @@ def _seed_defaults(name, fname_parse, segments, records) -> None:
     st.session_state["cfg_script_path"] = name
     st.session_state["cfg_audio_path"] = ""
     st.session_state["cfg_master"] = DEFAULT_MASTER_CONVENTION_NAME
-    st.session_state["cfg_annotator"] = ""
+    # None so the Annotator ID selectbox opens on its placeholder rather than
+    # silently pre-selecting someone.
+    st.session_state["cfg_annotator"] = None
     st.session_state["cfg_cs_primary"] = DEFAULT_CS_RATIO_PRIMARY
-    st.session_state["cfg_cs_secondary"] = DEFAULT_CS_RATIO_SECONDARY
+    # cfg_cs_secondary is not seeded: the secondary ratio is always derived
+    # from the primary (see secondary_cs_ratio).
 
     labels = detect_speakers(segments)
     for i, label in enumerate(labels):
@@ -295,6 +314,14 @@ def _seed_defaults(name, fname_parse, segments, records) -> None:
 def _selected_record(records):
     display = st.session_state.get("cfg_language", records[0].display_name)
     return next((r for r in records if r.display_name == display), records[0])
+
+
+def secondary_cs_ratio() -> float:
+    """Secondary CS ratio, always 100 minus the primary."""
+    primary = float(
+        st.session_state.get("cfg_cs_primary", DEFAULT_CS_RATIO_PRIMARY)
+    )
+    return round(100.0 - primary, 4)
 
 
 def _stage_configure(records) -> None:
@@ -342,10 +369,13 @@ def _stage_configure(records) -> None:
             disabled=True,
         )
         st.text_input("Metadata Type", value=record.metadata_type, disabled=True)
-        st.text_input(
+        st.selectbox(
             "Annotator ID",
+            ANNOTATOR_IDS,
             key="cfg_annotator",
-            help="Required. Blocks generation while empty.",
+            accept_new_options=True,
+            help="Pick an ID, or type a new one if yours is not listed. "
+            "Required — blocks generation while empty.",
         )
         c1, c2 = st.columns(2)
         c1.number_input(
@@ -355,16 +385,19 @@ def _stage_configure(records) -> None:
             max_value=100.0,
             step=0.1,
             format="%.1f",
-            help="Decimals allowed (e.g. 60.8). Should total 100 with the "
-            "secondary ratio.",
+            help="Decimals allowed (e.g. 60.8). The secondary ratio is "
+            "calculated automatically as 100 minus this value.",
         )
+        # Derived, never typed: removes any chance of the pair not totalling 100.
         c2.number_input(
             "CS Ratio Secondary",
-            key="cfg_cs_secondary",
+            value=secondary_cs_ratio(),
             min_value=0.0,
             max_value=100.0,
             step=0.1,
             format="%.1f",
+            disabled=True,
+            help="Calculated as 100 minus the primary ratio.",
         )
 
     with st.expander("Paths & convention"):
@@ -439,9 +472,9 @@ def _assemble_config(records) -> ConversationConfig:
         audio_file_path=st.session_state.get("cfg_audio_path", ""),
         master_convention_name=st.session_state.get("cfg_master", ""),
         custom_addendum=st.session_state.get("cfg_addendum", ""),
-        annotator_id=st.session_state.get("cfg_annotator", "").strip(),
+        annotator_id=(st.session_state.get("cfg_annotator") or "").strip(),
         cs_ratio_primary=float(st.session_state.get("cfg_cs_primary", 0.0)),
-        cs_ratio_secondary=float(st.session_state.get("cfg_cs_secondary", 0.0)),
+        cs_ratio_secondary=secondary_cs_ratio(),
     )
 
 

@@ -114,6 +114,16 @@ SPEAKER_GENDERS: list[str] = ["Male", "Female", "Unknown"]
 SPEAKER_NATIVITIES: list[str] = ["Native", "Non-Native", "Unknown"]
 SPEAKER_AGE_BUCKETS: list[str] = ["18-25", "26-40", "41-65", "65+"]
 
+# Suggested annotator IDs. The dropdown also accepts a typed-in value, so an
+# ID missing from this list can be used without a code change.
+ANNOTATOR_IDS: list[str] = [
+    "annot_001",
+    "annot_002",
+    "annot_003",
+    "annot_004",
+    "annot_005",
+]
+
 # --- Defaults --------------------------------------------------------------
 
 DEFAULT_MASTER_CONVENTION_NAME = "awsTranscriptionGuidelines_en_US_3.2"

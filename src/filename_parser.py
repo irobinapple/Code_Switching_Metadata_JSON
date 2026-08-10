@@ -26,9 +26,24 @@ def _normalize_sampling_rate(raw: str) -> str:
 def parse_filename(
     filename: str, language_records: list[LanguageRecord]
 ) -> ParsedFilename:
-    """Parse a transcript filename into detected tokens with warnings."""
+    """Parse a transcript filename into detected tokens, warnings and errors."""
     stem = Path(filename).stem
     result = ParsedFilename()
+
+    # Client convention uses a hyphen inside the language code (`fr-FR`). An
+    # underscore there (`fr_FR`) reads as two separate tokens, so the locale
+    # is never found — and the wrong name would ship as
+    # Conversation_Script_Path. Block and tell the user exactly what to
+    # rename it to.
+    underscored = _detect_underscored_locale(stem, language_records)
+    if underscored is not None:
+        wrong, right = underscored
+        result.suggested_filename = filename.replace(wrong, right, 1)
+        result.errors.append(
+            f"This filename writes the language code as '{wrong}'. The client "
+            f"convention uses a hyphen: '{right}'. Rename the file to "
+            f"'{result.suggested_filename}' and upload it again."
+        )
 
     # ConvID — regex, preserved exactly, variable digit width.
     conv_match = _CONV_RE.search(stem)
@@ -65,6 +80,26 @@ def parse_filename(
         )
 
     return result
+
+
+def _detect_underscored_locale(
+    stem: str, language_records: list[LanguageRecord]
+) -> tuple[str, str] | None:
+    """Find a known locale written with an underscore instead of a hyphen.
+
+    Returns `(as_written, correct_form)` — e.g. `("fr_FR", "fr-FR")` — using
+    the casing actually present in the filename, so the suggested rename is a
+    minimal edit.
+    """
+    for record in sorted(
+        language_records, key=lambda r: len(r.language_code), reverse=True
+    ):
+        underscored = record.language_code.replace("-", "_")
+        match = re.search(re.escape(underscored), stem, re.IGNORECASE)
+        if match:
+            as_written = match.group(0)
+            return as_written, as_written.replace("_", "-")
+    return None
 
 
 def _detect_locale(

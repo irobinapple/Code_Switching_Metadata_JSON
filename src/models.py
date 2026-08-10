@@ -80,6 +80,15 @@ class ParsedFilename:
     domain: str | None = None
     sampling_rate: str | None = None
     warnings: list[str] = field(default_factory=list)
+    # Blocking problems with the filename itself (e.g. an underscore inside
+    # the language code). Upload cannot proceed until the file is renamed.
+    errors: list[str] = field(default_factory=list)
+    # The client-convention filename to rename to, when we can derive it.
+    suggested_filename: str | None = None
+
+    @property
+    def is_blocked(self) -> bool:
+        return bool(self.errors)
 
 
 @dataclass

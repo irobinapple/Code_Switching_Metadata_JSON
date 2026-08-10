@@ -115,6 +115,12 @@ codes, sampling-rate patterns (`8kHz`/`16kHz`/`48kHz`, case-insensitive,
 fallback. Undetected tokens are left blank with a non-blocking warning —
 never guessed.
 
+The language code must use a **hyphen** (`fr-FR`), per the client convention.
+A filename that writes it with an underscore (`fr_FR_English_INS_16KHz_...`)
+is **rejected**: the app shows the exact corrected filename to rename to and
+will not process the file until it does. The uploaded name ships as
+`Conversation_Script_Path`, so it has to be right at the source.
+
 ## Supported transcript examples
 
 Transcripts follow an SRT-like two-line pattern — a timestamp+speaker line,
@@ -159,7 +165,7 @@ Tôi rất bức bội. My flight to Paris was just cancelled and no one told me
 ```
 app.py                    Streamlit UI entry point (UI only)
 requirements.txt
-config/languages.json     25 finalized language records (source of truth)
+config/languages.json     32 language records (source of truth)
 src/
   constants.py            column lists, allowed values, schema literals
   models.py               dataclasses + language config loading

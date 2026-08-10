@@ -70,9 +70,69 @@ class TestMissingTokens:
         assert any("locale" in w.lower() for w in result.warnings)
 
 
+class TestUnderscoredLocaleIsBlocked:
+    """`fr_FR` instead of `fr-FR` must stop the upload with a rename hint."""
+
+    def test_underscored_locale_blocks(self):
+        result = parse_filename(
+            "fr_FR_English_INS_16KHz_Conv134.docx", LANGS
+        )
+        assert result.is_blocked
+        assert result.errors
+
+    def test_suggested_filename_uses_a_hyphen(self):
+        result = parse_filename(
+            "fr_FR_English_INS_16KHz_Conv134.docx", LANGS
+        )
+        assert (
+            result.suggested_filename
+            == "fr-FR_English_INS_16KHz_Conv134.docx"
+        )
+
+    def test_error_names_both_forms(self):
+        result = parse_filename("vi_VN_English_AIR_48kHz_Conv059.txt", LANGS)
+        message = " ".join(result.errors)
+        assert "vi_VN" in message
+        assert "vi-VN" in message
+
+    def test_correct_filename_is_not_blocked(self):
+        result = parse_filename(
+            "fr-FR_English_INS_16KHz_Conv134.docx", LANGS
+        )
+        assert not result.is_blocked
+        assert result.locale == "fr-FR"
+        assert result.conv_id == "Conv134"
+        assert result.domain == "INS"
+        assert result.sampling_rate == "16kHz"
+
+    def test_casing_is_preserved_in_the_suggestion(self):
+        result = parse_filename("FR_fr_English_INS_16KHz_Conv134.docx", LANGS)
+        # Matched case-insensitively; the rename keeps what the user typed.
+        assert result.suggested_filename == "FR-fr_English_INS_16KHz_Conv134.docx"
+
+
 class TestLanguageConfigNormalization:
-    def test_all_25_records(self):
-        assert len(LANGS) == 25
+    def test_all_records(self):
+        assert len(LANGS) == 32
+
+    def test_display_names_unique(self):
+        # The language dropdown selects by display name, so duplicates would
+        # make a record unreachable (the client list has "Arabic" twice).
+        names = [r.display_name for r in LANGS]
+        assert len(names) == len(set(names))
+
+    def test_client_list_codes_all_present(self):
+        expected = {
+            "ca-ES", "pt-BR", "pt-PT", "fr-CA", "fr-FR", "it-IT", "de-DE",
+            "de-CH", "es-ES", "es-US", "nl-NL", "sv-SE", "da-DK", "fi-FI",
+            "no-NO", "zh-CN", "zh-TW", "zh-HK", "ja-JP", "ko-KR", "ar-AE",
+            "ar-SA", "hi-IN", "th-TH", "he-IL", "tr-TR", "ru-RU", "vi-VN",
+            "ms-MY", "ta-IN", "ar-FR",
+        }
+        codes = {r.language_code for r in LANGS}
+        assert expected <= codes
+        # Tagalog stays on tl-PH (the client list's tl-TL is Timor-Leste).
+        assert "tl-PH" in codes
 
     def test_no_hyphen_in_derived_codes(self):
         for rec in LANGS:
