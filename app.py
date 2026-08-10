@@ -67,6 +67,10 @@ STAGES = [
     "Generate Metadata & JSON",
 ]
 
+# Suffix marking a read-only widget whose value is derived fresh on every run
+# rather than held in session state (see _persist_widget_state).
+DERIVED_DISPLAY_SUFFIX = "_langs_display"
+
 
 # --- Session helpers -------------------------------------------------------
 
@@ -450,7 +454,7 @@ def _render_speaker_cards(segments, record) -> None:
                 "Speaker Languages",
                 value=languages,
                 disabled=True,
-                key=f"spk_{label}_langs_display",
+                key=f"spk_{label}{DERIVED_DISPLAY_SUFFIX}",
             )
 
 
@@ -648,8 +652,15 @@ def _persist_widget_state() -> None:
     entered on the Configure stage survive on Preview/Generate.
     """
     for key in list(st.session_state.keys()):
-        if key.startswith(("cfg_", "spk_")):
-            st.session_state[key] = st.session_state[key]
+        if not key.startswith(("cfg_", "spk_")):
+            continue
+        # Read-only derived fields (e.g. Speaker Languages) are rebuilt from
+        # the current language on every run and passed as an explicit value.
+        # Pinning them too would make Streamlit warn that the widget has both
+        # a default value and a Session State entry.
+        if key.endswith(DERIVED_DISPLAY_SUFFIX):
+            continue
+        st.session_state[key] = st.session_state[key]
 
 
 def main() -> None:
