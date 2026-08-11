@@ -1,0 +1,7 @@
+# Shell launchers must keep LF endings, or macOS/Linux cannot read the
+# shebang line ("bad interpreter") after the repo passes through Windows.
+*.command text eol=lf
+*.sh      text eol=lf
+
+# Windows batch files need CRLF to run reliably.
+*.bat     text eol=crlf
