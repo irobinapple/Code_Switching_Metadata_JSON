@@ -14,22 +14,27 @@ import streamlit as st
 
 from src.constants import (
     ANNOTATOR_IDS,
+    CONVERSATION_TYPE_1,
+    CONVERSATION_TYPE_2,
+    CONVERSATION_TYPES,
     DEFAULT_CS_RATIO_PRIMARY,
     DEFAULT_MASTER_CONVENTION_NAME,
     DEFAULT_SPEAKER_LABELS,
     DOMAIN_CODES,
     SAMPLING_RATES,
     SPEAKER_AGE_BUCKETS,
+    SPEAKER_COUNT_BY_TYPE,
     SPEAKER_GENDERS,
     SPEAKER_NATIVITIES,
     SPEAKER_ROLES,
 )
 from src.exporters import (
+    metadata_csv_filename,
     metadata_to_csv_bytes,
+    rawmetadata_csv_filename,
     rawmetadata_to_csv_bytes,
     rawmetadata_to_xlsx_bytes,
-    validation_report_json_bytes,
-    validation_report_txt_bytes,
+    rawmetadata_xlsx_filename,
 )
 from src.filename_parser import parse_filename
 from src.json_builder import (
@@ -54,9 +59,11 @@ from src.transcript_parser import (
     read_csv_bytes,
 )
 from src.transformers import (
+    build_filename_stem,
     build_metadata,
     build_rawmetadata,
     conversation_duration_sec,
+    role_for_label,
 )
 from src.validators import run_full_validation, validate_rawmetadata
 
@@ -196,8 +203,33 @@ def _handle_csv(data: bytes):
     return parse_csv_mapped(frame, start, end, speaker, content)
 
 
+def _conversation_type() -> str:
+    return st.session_state.get("cfg_conv_type", CONVERSATION_TYPE_1)
+
+
+def _expected_speaker_count() -> int:
+    return SPEAKER_COUNT_BY_TYPE[_conversation_type()]
+
+
 def _stage_upload(records) -> None:
     st.subheader("1. Upload a transcript")
+
+    st.radio(
+        "Conversation type",
+        CONVERSATION_TYPES,
+        key="cfg_conv_type",
+        horizontal=True,
+        help=(
+            "Type 1 is a standard Agent/Customer call. Type 2 adds a "
+            "Translator. This is kept for the rest of the session — change "
+            "it here or in the sidebar."
+        ),
+    )
+    expected = _expected_speaker_count()
+    st.caption(
+        f"Transcripts must contain exactly **{expected} speakers**."
+    )
+
     uploaded = st.file_uploader(
         "Accepted formats: .docx, .csv, .txt",
         type=["docx", "csv", "txt"],
@@ -234,8 +266,37 @@ def _stage_upload(records) -> None:
         )
         return
 
-    # Reset form defaults only when a genuinely new file is processed.
-    new_key = f"{uploaded.name}:{len(data)}"
+    detected = detect_speakers(segments)
+    unlabeled = bool(detected) and set(detected) <= set(DEFAULT_SPEAKER_LABELS)
+    conv_type = _conversation_type()
+
+    # A 3-speaker call cannot be attributed from an unlabeled transcript: the
+    # translator interleaves rather than following a fixed rotation, so any
+    # guess would mislabel most turns.
+    if unlabeled and conv_type == CONVERSATION_TYPE_2:
+        st.error(
+            "This transcript has no speaker labels, which cannot be used for "
+            f"{CONVERSATION_TYPE_2}. Add a label to each turn — "
+            "`[Agent]`, `[Customer]` or `[Translator]` — then upload again."
+        )
+        st.code(
+            "00:00:03,060 --> 00:00:04,520 [Agent]\n"
+            "Thank you for calling Global IT.",
+            language=None,
+        )
+        return
+
+    if len(detected) != expected:
+        st.error(
+            f"{conv_type} expects **{expected} speakers**, but this "
+            f"transcript has **{len(detected)}** "
+            f"({', '.join(detected) if detected else 'none'}). Check the "
+            "transcript, or switch the conversation type above."
+        )
+        return
+
+    # Only a transcript that passed every check is committed to the session.
+    new_key = f"{uploaded.name}:{len(data)}:{conv_type}"
     if st.session_state.get("processed_key") != new_key:
         _seed_defaults(uploaded.name, fname_parse, segments, records)
         st.session_state["processed_key"] = new_key
@@ -246,8 +307,7 @@ def _stage_upload(records) -> None:
 
     st.success(f"Parsed **{uploaded.name}** — {len(segments)} turn(s) detected.")
 
-    detected = detect_speakers(segments)
-    if detected and set(detected) <= set(DEFAULT_SPEAKER_LABELS):
+    if unlabeled:
         st.info(
             "This transcript had no speaker labels, so turns were assigned to "
             f"**{'** / **'.join(detected)}** in alternating order. Please "
@@ -301,12 +361,14 @@ def _seed_defaults(name, fname_parse, segments, records) -> None:
     # from the primary (see secondary_cs_ratio).
 
     labels = detect_speakers(segments)
+    conv_type = _conversation_type()
     for i, label in enumerate(labels):
         st.session_state.setdefault(f"spk_{label}_id", label)
-        default_role = (
-            "Agent" if i == 0 else "Customer" if i == 1 else SPEAKER_ROLES[0]
+        # Transcripts usually name the role in the label itself ([Translator]),
+        # which beats guessing by position — the translator is often speaker 2.
+        st.session_state.setdefault(
+            f"spk_{label}_role", role_for_label(label, i, conv_type)
         )
-        st.session_state.setdefault(f"spk_{label}_role", default_role)
         st.session_state.setdefault(f"spk_{label}_gender", "Unknown")
         st.session_state.setdefault(f"spk_{label}_age", SPEAKER_AGE_BUCKETS[1])
         st.session_state.setdefault(f"spk_{label}_nativity", "Unknown")
@@ -527,17 +589,18 @@ def _stage_preview(records) -> None:
     st.markdown("**All 34 columns — scroll horizontally to review.**")
     st.dataframe(frame, hide_index=True)
 
+    stem = build_filename_stem(config)
     d1, d2 = st.columns(2)
     d1.download_button(
-        "Download rawmetadata.xlsx",
+        f"Download {rawmetadata_xlsx_filename(stem)}",
         data=rawmetadata_to_xlsx_bytes(frame),
-        file_name="rawmetadata.xlsx",
+        file_name=rawmetadata_xlsx_filename(stem),
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
     d2.download_button(
-        "Download rawmetadata.csv",
+        f"Download {rawmetadata_csv_filename(stem)}",
         data=rawmetadata_to_csv_bytes(frame),
-        file_name="rawmetadata.csv",
+        file_name=rawmetadata_csv_filename(stem),
         mime="text/csv",
     )
 
@@ -591,11 +654,12 @@ def _stage_generate(records) -> None:
     if blocked:
         st.caption("Downloads are disabled until all blocking errors are fixed.")
 
+    stem = build_filename_stem(config)
     d1, d2 = st.columns(2)
     d1.download_button(
-        "Download metadata.csv",
+        f"Download {metadata_csv_filename(stem)}",
         data=metadata_to_csv_bytes(meta_frame),
-        file_name="metadata.csv",
+        file_name=metadata_csv_filename(stem),
         mime="text/csv",
         disabled=blocked,
     )
@@ -605,20 +669,6 @@ def _stage_generate(records) -> None:
         file_name=json_filename(config),
         mime="application/json",
         disabled=blocked,
-    )
-
-    r1, r2 = st.columns(2)
-    r1.download_button(
-        "Download validation_report.json",
-        data=validation_report_json_bytes(result.errors, result.warnings),
-        file_name="validation_report.json",
-        mime="application/json",
-    )
-    r2.download_button(
-        "Download validation_report.txt",
-        data=validation_report_txt_bytes(result.errors, result.warnings),
-        file_name="validation_report.txt",
-        mime="text/plain",
     )
 
     st.divider()
@@ -672,6 +722,15 @@ def main() -> None:
     with st.sidebar:
         st.markdown("### Project")
         st.caption(f"{len(records)} languages loaded from config.")
+        # Read-only here: the type is chosen on the Upload stage, because
+        # changing it means the transcript has to be re-checked anyway.
+        st.markdown(f"**Conversation type:** `{_conversation_type()}`")
+        st.button(
+            "Change conversation type",
+            on_click=_goto,
+            args=(0,),
+            help="Takes you back to Upload, where the type is set.",
+        )
         _render_sidebar_summary(records)
         st.divider()
         st.button("Reset project", on_click=_reset_project)

@@ -13,9 +13,20 @@ FIXTURES = Path(__file__).parent / "fixtures"
 CANONICAL_TRANSCRIPT = FIXTURES / "vi-VN_English_AIR_48kHz_Conv0347.txt"
 
 
+THREE_SPEAKER_TRANSCRIPT = FIXTURES / "es-US_English_IT_16kHz_Conv120.txt"
+
+
 @pytest.fixture
 def vi_en_text() -> str:
     return CANONICAL_TRANSCRIPT.read_text(encoding="utf-8")
+
+
+@pytest.fixture
+def three_speaker_segments():
+    """Real Type 2 transcript: Agent / Translator / Customer labels."""
+    return parse_transcript_text(
+        THREE_SPEAKER_TRANSCRIPT.read_text(encoding="utf-8")
+    )
 
 
 @pytest.fixture

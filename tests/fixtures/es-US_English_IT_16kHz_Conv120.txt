@@ -1,0 +1,23 @@
+00:00:03,060 --> 00:00:04,520 [Agent]
+"Thank you for calling Global IT.
+
+00:00:06,540 --> 00:00:07,930 [Agent]
+My name is Jeff. How can I help you today?"
+
+00:00:09,990 --> 00:00:18,240 [Translator]
+El agente dice: "Gracias por llamar al soporte telefónico técnico global de IT. Mi nombre es Jeff. ¿En qué le puedo ayudarle hoy?"
+
+00:00:18,240 --> 00:00:35,060 [Customer]
+Hola, mi nombre es Carolina González. Estoy llamando porque mi computadora portátil de trabajo no puede conectarse a la red VPN de la empresa. Tengo una reunión importante en menos de una hora y necesito acceder a unos archivos muy importantes.
+
+00:00:37,040 --> 00:00:51,540 [Translator]
+"The customer says his name is Carolina González. She is calling because his work laptop cannot connect to the company VPN. She has an important meeting in less than an hour and needs access to some important files."
+
+00:00:52,769 --> 00:01:05,980 [Agent]
+"I'm sorry you're experiencing that issue, Carolina. Uh, I'll do my best to get everything working as quickly as possible. Before we begin troubleshooting, I'll just need to verify your identity. Could you please provide me your employee ID and your corporate email address?"
+
+00:01:10,260 --> 00:01:24,260 [Translator]
+El agente dice que lamenta el inconveniente y hará todo lo posible para resolverlo rápidamente. Antes de comenzar, necesita verificar su identidad. ¿Podría proporcionar su número de empleado y su correo electrónico corporativo?
+
+00:01:25,340 --> 00:01:40,660 [Customer]
+Claro. Mi número de empleado es 551-204 y mi correo electrónico corporativo es carolina.gonzalez@globalcorp.com.

@@ -9,11 +9,14 @@ from __future__ import annotations
 import pandas as pd
 
 from .constants import (
+    CONVERSATION_TYPE_1,
     DEFAULT_LOUDNESS_LEVEL,
     DEFAULT_PRIMARY_TYPE,
+    DEFAULT_ROLES_BY_TYPE,
     METADATA_COLUMNS,
     METADATA_TYPE_TRANSLITERATION,
     RAWMETADATA_COLUMNS,
+    SPEAKER_ROLES,
 )
 from .models import ConversationConfig, SpeakerMapping, TranscriptSegment
 
@@ -95,6 +98,25 @@ def build_filename_stem(config: ConversationConfig) -> str:
         f"{config.lang_pair}_{config.domain}_"
         f"{config.sampling_rate}_{config.conv_id}"
     )
+
+
+def role_for_label(label: str, position: int, conversation_type: str) -> str:
+    """Best default SpeakerRole for a detected transcript label.
+
+    Transcripts usually label turns with the role itself (`[Agent]`,
+    `[Translator]`), which is matched directly — position is only a fallback
+    for opaque labels such as `SPK001`.
+    """
+    normalized = label.strip().casefold()
+    for role in SPEAKER_ROLES:
+        if normalized == role.casefold():
+            return role
+    defaults = DEFAULT_ROLES_BY_TYPE.get(
+        conversation_type, DEFAULT_ROLES_BY_TYPE[CONVERSATION_TYPE_1]
+    )
+    if position < len(defaults):
+        return defaults[position]
+    return SPEAKER_ROLES[0]
 
 
 def conversation_duration_sec(segments: list[TranscriptSegment]) -> float:

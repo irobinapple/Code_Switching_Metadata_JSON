@@ -109,7 +109,28 @@ SAMPLING_RATES: list[str] = ["8kHz", "16kHz", "48kHz", "Custom"]
 # second to Customer.
 DEFAULT_SPEAKER_LABELS: list[str] = ["Speaker 1", "Speaker 2"]
 
-SPEAKER_ROLES: list[str] = ["Agent", "Customer", "No-Speaker"]
+# --- Conversation types ----------------------------------------------------
+
+# Both types produce the same JSON structure; the type fixes how many
+# speakers a transcript must contain and which roles they default to.
+CONVERSATION_TYPE_1 = "Type 1 - 2 Speakers"
+CONVERSATION_TYPE_2 = "Type 2 - 3 Speakers"
+CONVERSATION_TYPES: list[str] = [CONVERSATION_TYPE_1, CONVERSATION_TYPE_2]
+
+SPEAKER_COUNT_BY_TYPE: dict[str, int] = {
+    CONVERSATION_TYPE_1: 2,
+    CONVERSATION_TYPE_2: 3,
+}
+
+SPEAKER_ROLES: list[str] = ["Agent", "Customer", "Translator", "No-Speaker"]
+
+# Positional fallback when a transcript's labels are not already role names
+# (e.g. SPK001/SPK002). Real transcripts usually label turns [Agent],
+# [Customer], [Translator], which is matched directly instead.
+DEFAULT_ROLES_BY_TYPE: dict[str, list[str]] = {
+    CONVERSATION_TYPE_1: ["Agent", "Customer"],
+    CONVERSATION_TYPE_2: ["Agent", "Customer", "Translator"],
+}
 SPEAKER_GENDERS: list[str] = ["Male", "Female", "Unknown"]
 SPEAKER_NATIVITIES: list[str] = ["Native", "Non-Native", "Unknown"]
 SPEAKER_AGE_BUCKETS: list[str] = ["18-25", "26-40", "41-65", "65+"]

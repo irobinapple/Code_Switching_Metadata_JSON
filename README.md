@@ -8,7 +8,8 @@ code-switching call-center transcript into delivery-ready outputs:
 - `rawmetadata.xlsx` and `rawmetadata.csv` (34 columns)
 - `metadata.csv` (21 columns)
 - one UTF-8 JSON file per conversation
-- `validation_report.json` and `validation_report.txt`
+All named after the conversation, e.g. `es-US_English_IT_16kHz_Conv120.csv`.
+Validation results are shown in the app rather than exported as files.
 
 The workflow is a deliberate two-stage review: you inspect and download the
 **raw metadata** first, then explicitly trigger **metadata + JSON** generation.
@@ -43,8 +44,15 @@ pytest
 
 ## How to use
 
-1. **Upload** a `.docx`, `.csv`, or `.txt` transcript. The app shows the
-   filename, detected filename tokens, and the parsed turn count.
+1. **Upload** a `.docx`, `.csv`, or `.txt` transcript. Pick the
+   **conversation type** first — `Type 1 - 2 Speakers` (Agent, Customer) or
+   `Type 2 - 3 Speakers` (adds a Translator). The choice is kept for the whole
+   session; the sidebar shows it with a button to go back and change it. Both
+   types produce the same JSON structure — the type fixes how many speakers a
+   transcript must have and what the roles default to. A transcript whose
+   speaker count does not match the chosen type is rejected, as is an
+   unlabeled transcript in Type 2 (a translator's turns cannot be guessed).
+   The app then shows the filename, detected filename tokens, and turn count.
 2. **Configure** the conversation. Language selection is fully driven by
    `config/languages.json` and derives LangPair, primary/secondary codes, and
    metadata type. Filename tokens pre-fill fields but never overwrite an edit
@@ -54,8 +62,13 @@ pytest
    `rawmetadata.xlsx` / `rawmetadata.csv`, and read the scoped validation
    panel. Click **"Looks good — Generate Metadata & JSON"** to continue.
 4. **Generate Metadata & JSON** — summary cards, the full validation panel,
-   and downloads for `metadata.csv`, the per-conversation JSON, and both
-   validation reports.
+   and downloads. Every export is named after the conversation:
+
+   ```
+   es-US_English_IT_16kHz_Conv120.csv                 (metadata)
+   es-US_English_IT_16kHz_Conv120.json
+   es-US_English_IT_16kHz_Conv120_rawmetadata.xlsx    (from the preview step)
+   ```
 
 ## Sharing with non-technical associates
 
