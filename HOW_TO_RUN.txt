@@ -34,11 +34,33 @@ WINDOWS  (most people)
 ------------------------------------------------
 MAC
 ------------------------------------------------
-  1. Open the folder.
+  1. Open the folder (or, for a first-time install, double-click
+     Get-Ace-CSMJ.command to download the tool).
   2. Double-click:   Ace-CSMJ.command
-     (First time only: right-click it -> Open -> Open, to allow it.)
-  3. The browser opens at http://localhost:8501.
-  TO STOP: close the Terminal window that opened.
+
+     FIRST TIME ONLY - macOS blocks files from the internet:
+       If you see "cannot be opened because it is from an
+       unidentified developer", do this instead:
+         right-click (or Control-click) the file
+           -> Open
+           -> Open  (in the box that appears)
+       You only ever have to do this once per file.
+
+     If macOS offers to install "Command Line Developer Tools",
+     click Install and wait, then double-click the file again.
+
+  3. A Terminal window opens and sets things up. The FIRST run
+     takes a couple of minutes - this is normal. Just wait.
+  4. Your browser opens automatically at:
+        http://localhost:8501
+     That is the tool. Start working there.
+
+  TO STOP:  close the Terminal window.
+  TO START AGAIN LATER:  double-click Ace-CSMJ.command
+                         (quick from now on, and it auto-updates).
+
+  WANT IT IN YOUR DOCK?  drag Ace-CSMJ.command onto the Dock,
+     then click it any time to start the tool.
 
 ------------------------------------------------
 NEED HELP?

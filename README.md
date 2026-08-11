@@ -79,10 +79,23 @@ winget if it's missing (falling back to a manual link only if winget isn't
 available); on a private repo the first download shows a one-time GitHub
 sign-in.
 
+**Windows**
+
 - `Get-Ace-CSMJ.bat` — one-time downloader (the only file you need to send)
 - `Ace-CSMJ.bat` — start the app (auto-updates first)
 - `Update.bat` — pull the latest without starting the app
 - `CreateDesktopShortcut.bat` — put an "Ace - CSMJ" icon on the Desktop
+
+**macOS / Linux** — same flow, same auto-update:
+
+- `Get-Ace-CSMJ.command` — one-time downloader. Offers to install Apple's
+  Developer Tools if git is missing, and clears the `com.apple.quarantine`
+  tag so the launcher opens normally.
+- `Ace-CSMJ.command` — start the app (auto-updates first)
+
+On macOS the first double-click of a downloaded `.command` is blocked by
+Gatekeeper: right-click → **Open** → **Open** once, and it runs normally
+from then on. Drag `Ace-CSMJ.command` to the Dock for one-click launching.
 
 ### Simple: static copy (no auto-update)
 
